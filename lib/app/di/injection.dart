@@ -101,6 +101,11 @@ Future<void> configureDependencies({
   sl.registerSingleton<AuthRepository>(
       live ? FirebaseAuthRepository(FirebaseAuth.instance) : DemoAuthRepository(sl()));
 
+  if (live) {
+    // Firestore's disk cache is unencrypted and survives sign-out. Offline
+    // reads come from the encrypted BankSnapshotStore instead.
+    FirebaseFirestore.instance.settings = const Settings(persistenceEnabled: false);
+  }
   final BankRepository remote = live
       ? FirebaseBankRepository(
           firestore: FirebaseFirestore.instance,

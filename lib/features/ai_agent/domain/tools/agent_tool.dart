@@ -21,6 +21,8 @@ final class SessionDraftStore {
   void put(TransferDraft d) => _drafts[d.id] = d;
   TransferDraft? get(String id) => _drafts[id];
   TransferDraft? get latest => _drafts.values.lastOrNull;
+  Set<String> get ids => _drafts.keys.toSet();
+  void remove(String id) => _drafts.remove(id);
   void clear() => _drafts.clear();
 }
 

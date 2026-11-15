@@ -56,6 +56,28 @@ void main() {
   );
 
   blocTest<TransferBloc, TransferState>(
+    'a new draft or restart cannot reset a submission in flight',
+    build: build,
+    act: (b) async {
+      b.add(draftEvent);
+      await Future<void>.delayed(Duration.zero);
+      b.add(const TransferAuthenticationRequested('reason'));
+      await Future<void>.delayed(Duration.zero);
+      final draft = b.state.draft!;
+      b
+        ..add(const TransferSubmitted())
+        ..add(TransferDraftCreated(draft))
+        ..add(const TransferStarted());
+    },
+    wait: const Duration(milliseconds: 50),
+    verify: (b) {
+      expect(b.state.stage, TransferStage.completed);
+      expect(b.state.receipt, isNotNull);
+      expect(s.simulated.appliedTransfers, 1);
+    },
+  );
+
+  blocTest<TransferBloc, TransferState>(
     'authentication alone never submits',
     build: build,
     act: (b) async {

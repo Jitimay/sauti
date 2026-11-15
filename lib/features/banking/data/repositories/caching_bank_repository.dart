@@ -29,12 +29,16 @@ final class CachingBankRepository implements BankRepository {
         _ => -1,
       };
 
-  Future<Result<Fresh<T>>> _fallback<T>(Failure f, T? Function(BankSnapshot s) pick) async {
+  Future<Result<Fresh<T>>> _fallback<T>(
+    Failure f,
+    T? Function(BankSnapshot s) pick,
+    DateTime Function(BankSnapshot s) savedAt,
+  ) async {
     if (f is! NetworkFailure) return Err(f);
     final snap = await _store.read();
     final data = snap == null ? null : pick(snap);
     if (snap == null || data == null) return Err(f);
-    return Ok(Fresh(data, source: DataSource.cached, asOf: snap.savedAt));
+    return Ok(Fresh(data, source: DataSource.cached, asOf: savedAt(snap)));
   }
 
   @override
@@ -45,7 +49,7 @@ final class CachingBankRepository implements BankRepository {
         await _store.save(accounts: value.data, at: value.asOf);
         return r;
       case Err(:final failure):
-        return _fallback(failure, (s) => s.accounts);
+        return _fallback(failure, (s) => s.accounts, (s) => s.accountsAt);
     }
   }
 
@@ -61,7 +65,11 @@ final class CachingBankRepository implements BankRepository {
         return r;
       case Err(:final failure):
         // Deterministic local filtering on whatever is cached.
-        return _fallback(failure, (s) => s.transactions?.where(query.matches).take(query.limit).toList());
+        return _fallback(
+          failure,
+          (s) => s.transactions?.where(query.matches).take(query.limit).toList(),
+          (s) => s.transactionsAt,
+        );
     }
   }
 
@@ -97,7 +105,7 @@ final class CachingBankRepository implements BankRepository {
         await _store.save(notifications: value.data, at: value.asOf);
         return r;
       case Err(:final failure):
-        return _fallback(failure, (s) => s.notifications);
+        return _fallback(failure, (s) => s.notifications, (s) => s.notificationsAt);
     }
   }
 

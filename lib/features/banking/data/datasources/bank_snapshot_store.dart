@@ -16,13 +16,48 @@ final class BankSnapshot {
     this.notifications,
     this.beneficiaries,
     required this.savedAt,
+    this._accountsAt,
+    this._transactionsAt,
+    this._notificationsAt,
   });
 
   final List<Account>? accounts;
   final List<BankTransaction>? transactions;
   final List<BankNotification>? notifications;
   final List<Beneficiary>? beneficiaries;
+
+  /// Time of the most recent save of any section.
   final DateTime savedAt;
+
+  final DateTime? _accountsAt;
+  final DateTime? _transactionsAt;
+  final DateTime? _notificationsAt;
+
+  // Each section keeps the time it was actually fetched, so refreshing one
+  // section never makes another look newer than it is.
+  DateTime get accountsAt => _accountsAt ?? savedAt;
+  DateTime get transactionsAt => _transactionsAt ?? savedAt;
+  DateTime get notificationsAt => _notificationsAt ?? savedAt;
+
+  /// Merges a partial save into this snapshot (or a new one).
+  static BankSnapshot merge(
+    BankSnapshot? current, {
+    List<Account>? accounts,
+    List<BankTransaction>? transactions,
+    List<BankNotification>? notifications,
+    List<Beneficiary>? beneficiaries,
+    required DateTime at,
+  }) =>
+      BankSnapshot(
+        accounts: accounts ?? current?.accounts,
+        transactions: transactions ?? current?.transactions,
+        notifications: notifications ?? current?.notifications,
+        beneficiaries: beneficiaries ?? current?.beneficiaries,
+        savedAt: at,
+        accountsAt: accounts != null ? at : current?.accountsAt,
+        transactionsAt: transactions != null ? at : current?.transactionsAt,
+        notificationsAt: notifications != null ? at : current?.notificationsAt,
+      );
 }
 
 abstract interface class BankSnapshotStore {
@@ -52,12 +87,16 @@ final class SecureBankSnapshotStore implements BankSnapshotStore {
       final j = (jsonDecode(raw) as Map).cast<String, Object?>();
       List<T>? list<T>(String k, T Function(Map<String, Object?>) f) =>
           (j[k] as List?)?.map((e) => f((e as Map).cast<String, Object?>())).toList();
+      DateTime? time(String k) => j[k] == null ? null : DateTime.parse(j[k]! as String);
       return BankSnapshot(
         accounts: list('accounts', BankMappers.accountFrom),
         transactions: list('transactions', BankMappers.transactionFrom),
         notifications: list('notifications', BankMappers.notificationFrom),
         beneficiaries: list('beneficiaries', BankMappers.beneficiaryFrom),
         savedAt: DateTime.parse(j['savedAt'] as String),
+        accountsAt: time('accountsAt'),
+        transactionsAt: time('transactionsAt'),
+        notificationsAt: time('notificationsAt'),
       );
     } catch (_) {
       // Corrupt cache is discarded, never trusted.
@@ -74,13 +113,23 @@ final class SecureBankSnapshotStore implements BankSnapshotStore {
     List<Beneficiary>? beneficiaries,
     required DateTime at,
   }) async {
-    final current = await read();
+    final s = BankSnapshot.merge(
+      await read(),
+      accounts: accounts,
+      transactions: transactions,
+      notifications: notifications,
+      beneficiaries: beneficiaries,
+      at: at,
+    );
     final data = {
-      'accounts': (accounts ?? current?.accounts)?.map(BankMappers.account).toList(),
-      'transactions': (transactions ?? current?.transactions)?.map(BankMappers.transaction).toList(),
-      'notifications': (notifications ?? current?.notifications)?.map(BankMappers.notification).toList(),
-      'beneficiaries': (beneficiaries ?? current?.beneficiaries)?.map(BankMappers.beneficiary).toList(),
-      'savedAt': at.toIso8601String(),
+      'accounts': s.accounts?.map(BankMappers.account).toList(),
+      'transactions': s.transactions?.map(BankMappers.transaction).toList(),
+      'notifications': s.notifications?.map(BankMappers.notification).toList(),
+      'beneficiaries': s.beneficiaries?.map(BankMappers.beneficiary).toList(),
+      'savedAt': s.savedAt.toIso8601String(),
+      'accountsAt': s.accountsAt.toIso8601String(),
+      'transactionsAt': s.transactionsAt.toIso8601String(),
+      'notificationsAt': s.notificationsAt.toIso8601String(),
     };
     await _storage.write(key: _key, value: jsonEncode(data));
   }
@@ -103,12 +152,13 @@ final class InMemoryBankSnapshotStore implements BankSnapshotStore {
     List<Beneficiary>? beneficiaries,
     required DateTime at,
   }) async {
-    _snap = BankSnapshot(
-      accounts: accounts ?? _snap?.accounts,
-      transactions: transactions ?? _snap?.transactions,
-      notifications: notifications ?? _snap?.notifications,
-      beneficiaries: beneficiaries ?? _snap?.beneficiaries,
-      savedAt: at,
+    _snap = BankSnapshot.merge(
+      _snap,
+      accounts: accounts,
+      transactions: transactions,
+      notifications: notifications,
+      beneficiaries: beneficiaries,
+      at: at,
     );
   }
 

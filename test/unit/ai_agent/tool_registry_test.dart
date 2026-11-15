@@ -52,6 +52,12 @@ void main() {
     expect(r.status, ToolExecutionStatus.rejected);
   });
 
+  test('search on_date rejects impossible dates instead of rolling over', () async {
+    expect((await run('search_transactions', {'on_date': '2026-13-45'})).status, ToolExecutionStatus.rejected);
+    expect((await run('search_transactions', {'on_date': '2026-02-30'})).status, ToolExecutionStatus.rejected);
+    expect((await run('search_transactions', {'on_date': '2026-11-15'})).ok, isTrue);
+  });
+
   group('malicious / misleading model arguments', () {
     test('unknown extra arguments are rejected (e.g. injected account id)', () async {
       final r = await run('prepare_transfer', {'recipient_name': 'Jean', 'amount': 1000, 'from_account': 'other-user'});
@@ -99,6 +105,8 @@ void main() {
     final r = await run('get_recent_transactions', {'limit': 2});
     final txs = r.modelPayload['transactions']! as List;
     expect((txs.first as Map).containsKey('description_untrusted'), isTrue);
+    expect((txs.first as Map).containsKey('counterparty_untrusted'), isTrue);
+    expect((txs.first as Map).containsKey('counterparty'), isFalse);
     expect((txs.first as Map).containsKey('description'), isFalse);
   });
 

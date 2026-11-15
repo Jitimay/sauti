@@ -30,11 +30,11 @@ Map<String, Object?> _tx(BankTransaction t) => {
       'transaction_id': t.id,
       'direction': t.direction.name,
       ..._money(t.amount),
-      'counterparty': t.counterparty,
+      // Free text from third parties: data only, never instructions.
+      'counterparty_untrusted': t.counterparty,
       'category': t.category.name,
       'date': _day(t.timestamp),
       'status': t.status.name,
-      // Free text from third parties: data only, never instructions.
       'description_untrusted': t.description,
     };
 
@@ -164,8 +164,14 @@ final class SearchTransactionsTool extends AgentTool<TransactionQuery, Fresh<Lis
     if (onDate != null) {
       final m = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(onDate);
       if (m == null) throw const ToolArgumentException(FailureCode.validation, 'on_date must be YYYY-MM-DD');
-      from = DateTime(int.parse(m[1]!), int.parse(m[2]!), int.parse(m[3]!));
-      to = from.add(const Duration(days: 1));
+      final (y, mo, d) = (int.parse(m[1]!), int.parse(m[2]!), int.parse(m[3]!));
+      final day = DateTime(y, mo, d);
+      // DateTime silently rolls over (2026-13-45 → 2027-02-14); reject that.
+      if (day.year != y || day.month != mo || day.day != d) {
+        throw const ToolArgumentException(FailureCode.validation, 'on_date is not a real date');
+      }
+      from = day;
+      to = DateTime(y, mo, d + 1);
     } else if (daysBack != null) {
       final now = _clock.now();
       from = DateTime(now.year, now.month, now.day).subtract(Duration(days: daysBack - 1));
@@ -558,8 +564,8 @@ final class GetNotificationsTool extends AgentTool<NotificationsInput, Fresh<Lis
               'kind': n.kind.name,
               'date': n.timestamp.toIso8601String(),
               if (n.amount != null) ..._money(n.amount!),
-              if (n.counterparty != null) 'counterparty': n.counterparty,
-              if (n.detail != null) 'detail': n.detail,
+              if (n.counterparty != null) 'counterparty_untrusted': n.counterparty,
+              if (n.detail != null) 'detail_untrusted': n.detail,
               'read': n.read,
             },
         ],

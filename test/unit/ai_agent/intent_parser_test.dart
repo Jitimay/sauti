@@ -47,7 +47,14 @@ void main() {
     expect(i.type, IntentType.searchIncoming);
     expect(i.amount, const Money.bif(30000));
     expect(p.parse('Who sent me money yesterday?').yesterday, isTrue);
+    expect(p.parse('Ninde yandungikiye amafaranga ejo hashize?').yesterday, isTrue);
+    expect(p.parse('Ninde yandungikiye amafaranga ejo?').yesterday, isFalse, reason: 'ejo is ambiguous');
     expect(t("Qui m'a envoyé de l'argent hier ?"), IntentType.searchIncoming);
+  });
+
+  test('"ma paie" (salary) is not a transfer, "paie Jean" is', () {
+    expect(p.parse('Est-ce que ma paie est arrivée ?').type, isNot(IntentType.transfer));
+    expect(p.parse('Paie 5000 à Jean').type, IntentType.transfer);
   });
 
   test('spending with category and period', () {

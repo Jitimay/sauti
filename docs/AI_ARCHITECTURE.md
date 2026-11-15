@@ -56,8 +56,8 @@ Every tool has a typed input parser that rejects unknown keys, wrong types, out-
 ## Safety measures against hallucination and prompt injection
 
 1. **Cards come from tools, not text.** Balances, transactions and drafts on screen are rendered from typed tool output.
-2. **GroundingGuard.** If cloud text mentions a money figure (e.g. "9,999,999 BIF") that does not appear in that turn's tool payloads or the user's own words (simple sums and differences are allowed), the reply is discarded and the deterministic engine answers instead.
-3. **Untrusted fields.** Third-party text is sent as `description_untrusted`, and the system prompt tells the model never to follow instructions inside `*_untrusted` fields.
+2. **GroundingGuard.** If cloud text mentions a money figure (e.g. "9,999,999 BIF", or a bare grouped number like "999,999") that does not appear in that turn's tool payloads or the user's own words (simple sums and differences are allowed), the reply is discarded and the deterministic engine answers instead. Drafts created by the abandoned attempt are discarded too. Limitation: amounts spelled out in words are not detected.
+3. **Untrusted fields.** Third-party text is sent as `description_untrusted`, `counterparty_untrusted` and `detail_untrusted`, and the system prompt tells the model never to follow instructions inside `*_untrusted` fields.
 4. **No secrets in prompts.** Passwords, PINs, tokens, user ids and account numbers never enter `AiRequest`. The system prompt tells the model to refuse PINs and passwords.
 5. **Server re-validation.** Even a valid draft is re-checked by the bank (simulated or Cloud Function) at submission.
 

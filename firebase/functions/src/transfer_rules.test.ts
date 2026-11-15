@@ -49,6 +49,13 @@ test('idempotent replay must match the original request', () => {
   if (typeof input === 'string') throw new Error(input);
   assert.equal(isSameRequest({ amountMinor: 20000, beneficiaryId: 'ben-jean', fromAccountId: 'acc-main' }, input), true);
   assert.equal(isSameRequest({ amountMinor: 30000, beneficiaryId: 'ben-jean', fromAccountId: 'acc-main' }, input), false);
+  // Same key reused with a different note is a different request.
+  assert.equal(
+    isSameRequest({ amountMinor: 20000, beneficiaryId: 'ben-jean', fromAccountId: 'acc-main', note: 'rent' }, input),
+    false,
+  );
+  // Records written before notes were stored (note missing) still match a note-less retry.
+  assert.equal(isSameRequest({ amountMinor: 20000, beneficiaryId: 'ben-jean', fromAccountId: 'acc-main', note: null }, input), true);
 });
 
 test('Burundi day boundary (UTC+2)', () => {

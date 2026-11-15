@@ -67,13 +67,14 @@ export function checkTransfer(input: TransferInput, s: LedgerState): RuleError |
 
 /** A replay is valid only if it is the same request. */
 export function isSameRequest(
-  stored: { amountMinor: number; beneficiaryId: string; fromAccountId: string },
+  stored: { amountMinor: number; beneficiaryId: string; fromAccountId: string; note?: string | null },
   input: TransferInput,
 ): boolean {
   return (
     stored.amountMinor === input.amountMinor &&
     stored.beneficiaryId === input.beneficiaryId &&
-    stored.fromAccountId === input.fromAccountId
+    stored.fromAccountId === input.fromAccountId &&
+    (stored.note ?? null) === (input.note ?? null)
   );
 }
 

@@ -19,6 +19,12 @@ import '../models/bank_mappers.dart';
 /// performs all money movement server-side with idempotency.
 ///
 /// Requires a configured Firebase project; see docs/FIREBASE_SETUP.md.
+///
+/// Reads always go to the server ([_server]). When the server is unreachable
+/// Firestore raises `unavailable`, which maps to [NetworkFailure], so the
+/// [CachingBankRepository] serves its encrypted snapshot with the real time
+/// it was saved. Firestore's own disk cache is disabled in the composition
+/// root: it is unencrypted and has no "saved at" time.
 final class FirebaseBankRepository implements BankRepository {
   FirebaseBankRepository({
     required FirebaseFirestore firestore,
@@ -30,6 +36,19 @@ final class FirebaseBankRepository implements BankRepository {
   final FirebaseFirestore _db;
   final FirebaseFunctions _functions;
   final String? Function() _uid;
+
+  static const _server = GetOptions(source: Source.server);
+
+  /// Sensitive callables use limited-use App Check tokens so the server can
+  /// consume them (replay protection).
+  static final _callableOptions = HttpsCallableOptions(limitedUseAppCheckToken: true);
+
+  /// Burundi is UTC+2 all year (no DST). Must match `startOfDayUtcPlus2` in
+  /// firebase/functions/src/transfer_rules.ts, which enforces the daily limit.
+  static DateTime startOfBurundiDay(DateTime now) {
+    final shifted = now.toUtc().add(const Duration(hours: 2));
+    return DateTime.utc(shifted.year, shifted.month, shifted.day).subtract(const Duration(hours: 2));
+  }
 
   Future<Result<T>> _guard<T>(Future<T> Function(DocumentReference<Map<String, dynamic>> user) body) async {
     final uid = _uid();
@@ -77,12 +96,14 @@ final class FirebaseBankRepository implements BankRepository {
 
   @override
   Future<Result<Fresh<List<Account>>>> getAccounts() => _guard((u) async {
-        var s = await u.collection('accounts').get();
-        if (s.docs.isEmpty && !s.metadata.isFromCache) {
+        var s = await u.collection('accounts').get(_server);
+        if (s.docs.isEmpty) {
           // First sign-in in the sandbox: the server provisions fictitious
           // data (idempotent). Clients cannot write accounts themselves.
-          await _functions.httpsCallable('provisionSandboxAccount').call<Map<String, dynamic>>();
-          s = await u.collection('accounts').get();
+          await _functions
+              .httpsCallable('provisionSandboxAccount', options: _callableOptions)
+              .call<Map<String, dynamic>>();
+          s = await u.collection('accounts').get(_server);
         }
         return _fresh(s.docs.map((d) => BankMappers.accountFrom(_withId(d))).toList(), s.metadata);
       });
@@ -92,29 +113,31 @@ final class FirebaseBankRepository implements BankRepository {
         Query<Map<String, dynamic>> ref = u.collection('transactions').orderBy('timestamp', descending: true);
         if (q.from != null) ref = ref.where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(q.from!));
         if (q.to != null) ref = ref.where('timestamp', isLessThan: Timestamp.fromDate(q.to!));
-        // Text/category/amount filters are applied client-side on the user's
-        // own (rule-restricted) data to avoid many composite indexes.
-        final s = await ref.limit(q.text == null && q.category == null ? q.limit : 500).get();
+        // Text/direction/category/amount filters are applied client-side on
+        // the user's own (rule-restricted) data to avoid many composite
+        // indexes, so fetch a wider window whenever any of them is set.
+        final filteredLocally = q.text != null || q.direction != null || q.category != null || q.amount != null;
+        final s = await ref.limit(filteredLocally ? 500 : q.limit).get(_server);
         final list = s.docs.map((d) => BankMappers.transactionFrom(_withId(d))).where(q.matches).take(q.limit);
         return _fresh(list.toList(), s.metadata);
       });
 
   @override
   Future<Result<BankTransaction>> getTransaction(String id) => _guard((u) async {
-        final d = await u.collection('transactions').doc(id).get();
+        final d = await u.collection('transactions').doc(id).get(_server);
         if (!d.exists) throw FirebaseException(plugin: 'cloud_firestore', code: 'not-found');
         return BankMappers.transactionFrom(_withId(d));
       });
 
   @override
   Future<Result<List<Beneficiary>>> getBeneficiaries() => _guard((u) async {
-        final s = await u.collection('beneficiaries').get();
+        final s = await u.collection('beneficiaries').get(_server);
         return s.docs.map((d) => BankMappers.beneficiaryFrom(_withId(d))).toList();
       });
 
   @override
   Future<Result<Fresh<List<BankNotification>>>> getNotifications() => _guard((u) async {
-        final s = await u.collection('notifications').orderBy('timestamp', descending: true).limit(50).get();
+        final s = await u.collection('notifications').orderBy('timestamp', descending: true).limit(50).get(_server);
         return _fresh(s.docs.map((d) => BankMappers.notificationFrom(_withId(d))).toList(), s.metadata);
       });
 
@@ -124,11 +147,10 @@ final class FirebaseBankRepository implements BankRepository {
 
   @override
   Future<Result<int>> outgoingTransferredToday() => _guard((u) async {
-        final now = DateTime.now();
         final s = await u
             .collection('transactions')
-            .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(DateTime(now.year, now.month, now.day)))
-            .get();
+            .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfBurundiDay(DateTime.now())))
+            .get(_server);
         return s.docs
             .map((d) => BankMappers.transactionFrom(_withId(d)))
             .where((t) => !t.isIncoming && t.category == TransactionCategory.transfer)
@@ -138,7 +160,7 @@ final class FirebaseBankRepository implements BankRepository {
   @override
   Future<Result<TransferReceipt>> submitTransfer(TransferRequest r) async {
     try {
-      final res = await _functions.httpsCallable('submitTransfer').call<Map<String, dynamic>>({
+      final res = await _functions.httpsCallable('submitTransfer', options: _callableOptions).call<Map<String, dynamic>>({
         'idempotencyKey': r.idempotencyKey,
         'fromAccountId': r.fromAccountId,
         'beneficiaryId': r.beneficiaryId,

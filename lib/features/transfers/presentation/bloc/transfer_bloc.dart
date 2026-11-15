@@ -135,7 +135,7 @@ final class TransferBloc extends Bloc<TransferEvent, TransferState> {
   }) : super(const TransferState()) {
     on<TransferStarted>(_onStarted, transformer: restartable());
     on<TransferDraftRequested>(_onDraftRequested, transformer: droppable());
-    on<TransferDraftCreated>(_onDraftCreated);
+    on<TransferDraftCreated>(_onDraftCreated, transformer: droppable());
     on<TransferAuthenticationRequested>(_onAuthDevice, transformer: droppable());
     on<TransferPasswordSubmitted>(_onAuthPassword, transformer: droppable());
     on<TransferSubmitted>(_onSubmit, transformer: droppable());
@@ -153,6 +153,7 @@ final class TransferBloc extends Bloc<TransferEvent, TransferState> {
   bool _can(TransferStage to) => _machine.canTransition(state.stage, to);
 
   Future<void> _onStarted(TransferStarted e, Emitter<TransferState> emit) async {
+    if (state.stage == TransferStage.submitting) return; // never reset an in-flight submission
     emit(const TransferState());
     final avail = await _authenticator.availability();
     final r = await _beneficiaries();
@@ -178,7 +179,11 @@ final class TransferBloc extends Bloc<TransferEvent, TransferState> {
   }
 
   Future<void> _onDraftCreated(TransferDraftCreated e, Emitter<TransferState> emit) async {
+    // A submission in flight must finish (and show its receipt or failure)
+    // before another draft can take over the flow.
+    if (state.stage == TransferStage.submitting) return;
     final avail = await _authenticator.availability();
+    if (state.stage == TransferStage.submitting) return;
     emit(TransferState(
       stage: TransferStage.awaitingAuthentication,
       draft: e.draft,

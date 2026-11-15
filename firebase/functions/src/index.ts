@@ -27,6 +27,16 @@ const callableOptions = {
   consumeAppCheckToken: true,
 } as const;
 
+/**
+ * `consumeAppCheckToken` only marks the token as used; the framework does not
+ * reject a replayed token by itself. Sensitive handlers must check it.
+ */
+function rejectReplayedAppCheckToken(app: { alreadyConsumed?: boolean } | undefined): void {
+  if (!app || app.alreadyConsumed) {
+    throw new HttpsError('unauthenticated', 'app_check_token_replayed');
+  }
+}
+
 function fail(code: RuleError): never {
   const httpsCode = code === 'invalid_argument' ? 'invalid-argument' : 'failed-precondition';
   throw new HttpsError(httpsCode, code);
@@ -35,6 +45,7 @@ function fail(code: RuleError): never {
 export const submitTransfer = onCall(callableOptions, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError('unauthenticated', 'sign_in_required');
+  rejectReplayedAppCheckToken(request.app);
 
   const parsed = parseTransferInput(request.data);
   if (typeof parsed === 'string') fail(parsed);
@@ -79,7 +90,8 @@ export const submitTransfer = onCall(callableOptions, async (request) => {
     const total = input.amountMinor + POLICY.flatFeeMinor;
     const newAvailable = acc.availableBalance.minor - total;
     const txRef = user.collection('transactions').doc();
-    const reference = `SAUTI-SBX-${now.getTime().toString(36).toUpperCase()}`;
+    // Firestore auto-ids are unique; a timestamp alone can collide.
+    const reference = `SAUTI-SBX-${txRef.id.toUpperCase()}`;
     const money = (minor: number) => ({ minor, currency: POLICY.currency });
 
     tx.update(accountRef, {
@@ -120,7 +132,12 @@ export const submitTransfer = onCall(callableOptions, async (request) => {
       transactionId: txRef.id,
     };
     tx.create(requestRef, {
-      request: { amountMinor: input.amountMinor, beneficiaryId: input.beneficiaryId, fromAccountId: input.fromAccountId },
+      request: {
+        amountMinor: input.amountMinor,
+        beneficiaryId: input.beneficiaryId,
+        fromAccountId: input.fromAccountId,
+        note: input.note ?? null,
+      },
       receipt: r,
       createdAt: FieldValue.serverTimestamp(),
     });
@@ -139,6 +156,7 @@ export const submitTransfer = onCall(callableOptions, async (request) => {
 export const provisionSandboxAccount = onCall(callableOptions, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError('unauthenticated', 'sign_in_required');
+  rejectReplayedAppCheckToken(request.app);
   const user = db.collection('users').doc(uid);
   const main = user.collection('accounts').doc('sandbox-main');
 

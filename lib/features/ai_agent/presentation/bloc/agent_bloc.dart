@@ -140,7 +140,9 @@ final class AgentBloc extends Bloc<AgentUiEvent, AgentState> {
       await for (final ev in _orchestrator.run(userText: text, history: history, language: e.language)) {
         switch (ev) {
           case AgentProviderSelected(:final kind):
-            emit(state.copyWith(provider: () => kind));
+            // A new provider starts clean: tool errors from an abandoned
+            // attempt must not leak into the fallback's answer.
+            emit(state.copyWith(provider: () => kind, failure: () => null));
           case AgentToolStarted(:final toolName):
             emit(state.copyWith(phase: AgentPhase.executingTool, activeTool: () => toolName));
           case AgentToolFinished(:final record):

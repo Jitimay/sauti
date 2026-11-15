@@ -91,6 +91,7 @@ final class AgentOrchestrator {
       final isLast = i == available.length - 1;
       yield AgentProviderSelected(provider.kind, isFallback: i > 0 || provider != _providers.first);
       final events = <AgentEvent>[];
+      final draftsBefore = drafts.ids;
       try {
         await for (final e in _runWith(provider, userText, history, language, usedFallback: i > 0)) {
           // Tool progress is streamed live; the reply is held until the loop
@@ -105,6 +106,9 @@ final class AgentOrchestrator {
         return;
       } on AiProviderException catch (e) {
         _logger.warn('agent', '${provider.kind.name} failed → fallback', e);
+        // Drafts created by an abandoned attempt were never shown to the user;
+        // drop them so the fallback provider's draft is the only one.
+        drafts.ids.difference(draftsBefore).forEach(drafts.remove);
         if (isLast) rethrow;
       }
     }

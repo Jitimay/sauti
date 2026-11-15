@@ -14,8 +14,12 @@ final class GroundingGuard {
     caseSensitive: false,
   );
 
+  /// Thousands-grouped figures ("999,999", "20 000") even without a currency
+  /// word: a model can state a balance as a bare number.
+  static final _grouped = RegExp(r'(?<!\d)(\d{1,3}(?:[ ,.\u00A0\u202F]\d{3})+)(?!\d)');
+
   Set<int> _mentioned(String text) => {
-        for (final m in [..._amount.allMatches(text), ..._amountAfter.allMatches(text)])
+        for (final m in [..._amount.allMatches(text), ..._amountAfter.allMatches(text), ..._grouped.allMatches(text)])
           int.parse(m.group(1)!.replaceAll(RegExp(r'[ ,.  ]'), '')),
       };
 

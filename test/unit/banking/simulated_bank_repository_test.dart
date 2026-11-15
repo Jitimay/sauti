@@ -83,6 +83,18 @@ void main() {
     expect(txs.valueOrNull!.data.every((t) => t.counterparty == 'REGIDESO'), isTrue);
   });
 
+  test('each cached section keeps its own saved-at time', () async {
+    final accountsTime = DateTime(2026, 11, 15, 8);
+    final notificationsTime = DateTime(2026, 11, 15, 12);
+    await s.snapshots.save(accounts: DemoSeed(testNow).accounts(), at: accountsTime);
+    await s.snapshots.save(notifications: const [], at: notificationsTime);
+    s.network.set(false);
+    final acc = await s.bank.getAccounts();
+    expect(acc.valueOrNull!.isCached, isTrue);
+    expect(acc.valueOrNull!.asOf, accountsTime, reason: 'refreshing notifications must not age-wash balances');
+    expect((await s.bank.getNotifications()).valueOrNull!.asOf, notificationsTime);
+  });
+
   test('caching decorator without snapshot propagates NetworkFailure', () async {
     s.network.set(false);
     expect((await s.bank.getAccounts()).failureOrNull, isA<NetworkFailure>());

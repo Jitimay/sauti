@@ -148,6 +148,20 @@ void main() {
       expect(m.text, isNot(contains('9,999,999')));
     });
 
+    test('drafts from an abandoned cloud attempt are dropped on fallback', () async {
+      final cloud = ScriptedCloud([
+        (_) => const AiToolCallResponse(
+            [ToolCallRequest(id: '1', name: 'prepare_transfer', args: {'recipient_name': 'Jean', 'amount': 20000})]),
+        (_) => const AiTextResponse('Done: 7,777,777 BIF sent.'), // ungrounded → fallback
+      ]);
+      final s = TestStack(extraProviders: [cloud]);
+      final m = await ask(s, 'Send 20000 BIF to Jean');
+      expect(m.provider, AiProviderKind.localDeterministic);
+      expect(s.drafts.ids, hasLength(1), reason: 'only the fallback draft remains');
+      expect(m.cards.whereType<TransferDraftCard>().single.draft.id, s.drafts.ids.single);
+      expect(s.simulated.appliedTransfers, 0);
+    });
+
     test('model tool loop that never converges falls back', () async {
       final cloud = ScriptedCloud(List.filled(
           10, (_) => const AiToolCallResponse([ToolCallRequest(id: 'x', name: 'get_account_balance', args: {})])));
@@ -183,6 +197,18 @@ void main() {
       expect(g.ungroundedAmounts('You spent 45,000 BIF: 15 000 BIF and 30.000 BIF', userText: '', records: [rec]), isEmpty);
       expect(g.ungroundedAmounts('Sending 20,000 BIF', userText: 'send 20000 to jean', records: const []), isEmpty);
       expect(g.ungroundedAmounts('You have 1,000,000 BIF', userText: '', records: [rec]), {1000000});
+    });
+
+    test('catches bare grouped figures without a currency word', () {
+      final rec = ToolExecutionRecord(
+        request: const ToolCallRequest(id: '1', name: 'x', args: {}),
+        status: ToolExecutionStatus.succeeded,
+        modelPayload: const {'amount': 250000},
+        duration: Duration.zero,
+      );
+      expect(g.ungroundedAmounts('Your balance is 999,999.', userText: '', records: [rec]), {999999});
+      expect(g.ungroundedAmounts('Your balance is 250 000.', userText: '', records: [rec]), isEmpty);
+      expect(g.ungroundedAmounts('You made 3 transfers on 2026-11-15.', userText: '', records: [rec]), isEmpty);
     });
   });
 }

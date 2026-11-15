@@ -80,7 +80,12 @@ final class IntentParser {
   static const _whoSent = [
     ' who sent ', ' who paid ', " qui m'a ", ' qui ma ', ' ninde yandungikiye ', ' ninde yampaye ', ' ninde yarungitse ',
   ];
-  static const _yesterday = [' yesterday ', ' hier ', ' ejo hashize ', ' ejo '];
+  // Bare "ejo" means both yesterday and tomorrow in Kirundi, so only the
+  // unambiguous "ejo hashize" counts.
+  static const _yesterday = [' yesterday ', ' hier ', ' ejo hashize '];
+
+  /// "ma paie" (my salary) is a noun, not the verb "paie" (pay).
+  static final _salaryNoun = RegExp(r' (?:ma|ta|sa|la|une|votre|notre|leur) paie ');
   static const _transactions = [
     ' transaction', ' history ', ' historique ', ' operation', ' mouvements ', ' ivyakozwe ', ' amahererezo ', ' statement ',
     ' releve ',
@@ -116,7 +121,7 @@ final class IntentParser {
   };
 
   ParsedIntent parse(String input) {
-    final t = _norm(input);
+    final t = _norm(input).replaceAll(_salaryNoun, ' salaire ');
     if (t.trim().isEmpty) return const ParsedIntent(IntentType.unknown);
 
     final amount = extractAmount(input);
