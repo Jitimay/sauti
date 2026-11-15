@@ -1,0 +1,95 @@
+rules_version = '2';
+
+// Sauti — restrictive Firestore rules.
+//
+// Principles:
+//  * Default deny. Every path must be explicitly allowed.
+//  * A user can only ever read their own subtree (users/{uid}/...).
+//  * Money state (accounts, transactions, beneficiaries, transfer requests)
+//    is written ONLY by Cloud Functions via the Admin SDK (which bypasses
+//    rules). Clients can never create, edit or delete it.
+//  * The few client-writable fields are whitelisted and type/size checked.
+//  * App Check enforcement for Firestore is enabled in the Firebase console
+//    (see docs/FIREBASE_SETUP.md); rules cannot express it.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function onlyChanges(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+
+    // ---- Profile & preferences (non-sensitive) ----
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['displayName', 'preferences', 'createdAt'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 80;
+
+      allow update: if isOwner(uid)
+        && onlyChanges(['displayName', 'preferences'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 80
+        && (!('preferences' in request.resource.data) || request.resource.data.preferences is map);
+
+      allow delete: if false;
+
+      // ---- Banking data: read-only for the owner, server-written only ----
+      match /accounts/{accountId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /transactions/{transactionId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /beneficiaries/{beneficiaryId} {
+        allow read: if isOwner(uid);
+        // Adding a beneficiary must go through a verified server flow.
+        allow write: if false;
+      }
+
+      // Idempotency records for transfers.
+      match /transferRequests/{key} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      // ---- Notifications: owner may only flip `read` to true ----
+      match /notifications/{notificationId} {
+        allow read: if isOwner(uid);
+        allow update: if isOwner(uid)
+          && onlyChanges(['read'])
+          && request.resource.data.read == true;
+        allow create, delete: if false;
+      }
+
+      // ---- Optional cloud-synced conversation summaries ----
+      // Text only, size-limited; no structured financial fields allowed.
+      match /conversations/{conversationId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(['messages', 'updatedAt', 'language'])
+          && request.resource.data.messages is list
+          && request.resource.data.messages.size() <= 60
+          && request.resource.data.language in ['en', 'fr', 'rn'];
+      }
+    }
+
+    // Everything else is denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,458 @@
+{
+  "@@locale": "en",
+  "appName": "Sauti",
+  "tagline": "Technology without barriers.",
+  "demoBanner": "DEMO · simulated bank · no real money",
+  "retry": "Try again",
+  "cancel": "Cancel",
+  "continueLabel": "Continue",
+  "close": "Close",
+  "done": "Done",
+  "loading": "Loading…",
+  "offlineBanner": "You are offline. Showing saved information.",
+  "cachedAt": "Saved at {time} · not live",
+  "@cachedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "liveData": "Live",
+  "failureNetwork": "No connection. Please check your internet and try again.",
+  "failureUnauthorized": "You are not allowed to do this. Please sign in again.",
+  "failureInvalidCredentials": "Email or password is incorrect.",
+  "failureEmailInUse": "An account already exists with this email.",
+  "failureWeakPassword": "Use at least 8 characters with letters and numbers.",
+  "failureUserNotFound": "No account found with this email.",
+  "failureAuthExpired": "Verification expired. Please verify again.",
+  "failureValidation": "Please check the information you entered.",
+  "failureInvalidAmount": "Enter a valid amount (minimum 500 BIF).",
+  "failureLimitExceeded": "This amount is above your transfer limit.",
+  "failureInsufficientFunds": "Not enough available balance.",
+  "failureBeneficiaryNotFound": "This person is not one of your saved recipients.",
+  "failureBeneficiaryAmbiguous": "More than one recipient matches. Please choose.",
+  "failureNotFound": "Not found.",
+  "failureDuplicate": "This transfer was already submitted.",
+  "failureTransferRejected": "The bank rejected this transfer. No money was sent.",
+  "failureOfflineNotAllowed": "You are offline. Transfers need a live connection and are never queued.",
+  "failureAiUnavailable": "The assistant is unavailable right now.",
+  "failureToolNotPermitted": "That action is not permitted.",
+  "failureVoiceUnavailable": "Voice input is not available on this device.",
+  "failureVoicePermission": "Microphone permission is needed for voice. You can still type.",
+  "failureVoiceLanguage": "Voice is not available in this language on this device.",
+  "failureServer": "The service had a problem. Nothing was changed.",
+  "failureUnexpected": "Something went wrong. Nothing was changed.",
+  "onboardingTitle1": "Bank by talking",
+  "onboardingBody1": "Ask Sauti about your balance, payments and spending, in your own words.",
+  "onboardingTitle2": "Safe by design",
+  "onboardingBody2": "Sauti never sends money on its own. You always verify and confirm on screen.",
+  "onboardingTitle3": "Made for everyone",
+  "onboardingBody3": "Large text, high contrast, screen reader support and voice — or simply type.",
+  "onboardingNext": "Next",
+  "onboardingStart": "Get started",
+  "onboardingSkip": "Skip",
+  "onboardingStep": "Step {current} of {total}",
+  "@onboardingStep": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "languageTitle": "Choose your language",
+  "languageSubtitle": "You can change it later in Settings.",
+  "welcomeTitle": "Your bank, in your voice",
+  "welcomeBody": "Check balances, understand payments and prepare transfers by simply asking.",
+  "signIn": "Sign in",
+  "createAccount": "Create account",
+  "tryDemo": "Try the demo",
+  "email": "Email",
+  "password": "Password",
+  "forgotPassword": "Forgot password?",
+  "demoCredentialsHint": "Demo account: {email} / {password}",
+  "@demoCredentialsHint": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      },
+      "password": {
+        "type": "String"
+      }
+    }
+  },
+  "useDemoCredentials": "Fill in demo account",
+  "showPassword": "Show password",
+  "hidePassword": "Hide password",
+  "emailInvalid": "Enter a valid email address.",
+  "passwordRequired": "Enter your password.",
+  "fullName": "Full name",
+  "nameInvalid": "Enter your name.",
+  "passwordRules": "At least 8 characters, with letters and numbers.",
+  "registerTitle": "Create your account",
+  "registerDemoNote": "Demo mode: new accounts last only for this session and use simulated data.",
+  "resetTitle": "Reset password",
+  "resetBody": "Enter your email and we will send you a reset link.",
+  "sendResetLink": "Send reset link",
+  "resetSent": "If an account exists for this email, a reset link has been sent.",
+  "resetDemoNote": "Demo mode: no email is actually sent.",
+  "greetingName": "Hello, {name}",
+  "@greetingName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "availableBalance": "Available balance",
+  "recentActivity": "Recent activity",
+  "seeAll": "See all",
+  "quickActions": "Quick actions",
+  "actionSend": "Send money",
+  "actionHistory": "History",
+  "actionInsights": "Insights",
+  "actionAccounts": "Accounts",
+  "talkToSauti": "Talk to Sauti",
+  "talkToSautiHint": "Opens the voice assistant",
+  "notificationsTooltip": "Notifications",
+  "unreadNotifications": "{count, plural, =0{No new notifications} =1{1 new notification} other{{count} new notifications}}",
+  "@unreadNotifications": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noTransactionsYet": "No transactions yet.",
+  "transactionsTitle": "Transactions",
+  "filterAll": "All",
+  "filterIncoming": "Money in",
+  "filterOutgoing": "Money out",
+  "searchTransactions": "Search by name",
+  "received": "Received",
+  "paid": "Paid",
+  "txSemanticIn": "Received {amount} from {name}, {date}",
+  "@txSemanticIn": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "txSemanticOut": "Paid {amount} to {name}, {date}",
+  "@txSemanticOut": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "transactionDetailsTitle": "Transaction details",
+  "detailAmount": "Amount",
+  "detailDate": "Date",
+  "detailCategory": "Category",
+  "detailCounterparty": "With",
+  "detailReference": "Reference",
+  "detailFee": "Fee",
+  "detailStatus": "Status",
+  "recurringPayment": "This is a recurring monthly payment.",
+  "shareOfCategory": "{percent}% of your {category} spending this month.",
+  "@shareOfCategory": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      },
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "askSautiExplain": "Ask Sauti to explain",
+  "categoryIncome": "Income",
+  "categoryTransfer": "Transfers",
+  "categoryTransport": "Transport",
+  "categoryGroceries": "Groceries",
+  "categoryUtilities": "Utilities",
+  "categoryAirtime": "Airtime",
+  "categoryHealth": "Health",
+  "categoryEducation": "Education",
+  "categoryFees": "Bank fees",
+  "categoryOther": "Other",
+  "statusCompleted": "Completed",
+  "statusPending": "Pending",
+  "statusFailed": "Failed",
+  "accountsTitle": "Accounts",
+  "accountTypeCurrent": "Current account",
+  "accountTypeSavings": "Savings",
+  "accountTypeWallet": "Mobile wallet",
+  "accountNumber": "Account {number}",
+  "@accountNumber": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "balanceLabel": "Balance",
+  "transferTitle": "Send money",
+  "chooseRecipient": "Choose a recipient",
+  "amountLabel": "Amount (BIF)",
+  "noteLabel": "Note (optional)",
+  "reviewTransfer": "Review transfer",
+  "savedRecipientsOnly": "For your safety, you can only send to saved recipients.",
+  "confirmTitle": "Confirm transfer",
+  "confirmTo": "To",
+  "confirmFrom": "From",
+  "confirmFee": "Fee",
+  "confirmTotal": "Total",
+  "confirmBalanceAfter": "Balance after",
+  "notSentYet": "Nothing has been sent yet.",
+  "stepVerify": "Step 1 · Verify it's you",
+  "stepConfirm": "Step 2 · Confirm and send",
+  "authenticateButton": "Verify it's me",
+  "authReason": "Confirm it's you to send {amount} to {name}",
+  "@authReason": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "usePassword": "Use my password instead",
+  "passwordFallbackHint": "Type your Sauti password. It is checked once and never stored. Never say it aloud.",
+  "verifyPassword": "Verify password",
+  "verified": "Identity verified",
+  "authExpiresHint": "For your security, verification expires after 2 minutes.",
+  "sendNow": "Send {amount} now",
+  "@sendNow": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelTransfer": "Cancel transfer",
+  "transferCancelled": "Transfer cancelled. No money was sent.",
+  "sending": "Sending… please keep the app open.",
+  "deviceAuthUnavailable": "Device verification is not available. Please use your password.",
+  "receiptTitle": "Transfer complete",
+  "receiptVerified": "Confirmed by the bank",
+  "receiptReference": "Reference",
+  "receiptDate": "Date",
+  "receiptNewBalance": "New balance",
+  "receiptSpoken": "Your transfer of {amount} to {name} is confirmed by the bank. Reference {reference}.",
+  "@receiptSpoken": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      },
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "transferFailedTitle": "Transfer not completed",
+  "transferUnknownBody": "We could not confirm the result. Check your history before trying again — retrying is safe and will not send twice.",
+  "insightsTitle": "Spending insights",
+  "thisMonth": "This month",
+  "lastMonth": "Last month",
+  "totalSpent": "Spent",
+  "totalReceived": "Received",
+  "spentMoreThanLast": "{percent}% more than the previous month",
+  "@spentMoreThanLast": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "spentLessThanLast": "{percent}% less than the previous month",
+  "@spentLessThanLast": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "byCategory": "By category",
+  "noSpending": "No spending in this period.",
+  "categoryShareSemantic": "{category}: {amount}, {percent}% of spending",
+  "@categoryShareSemantic": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsTitle": "Notifications",
+  "noNotifications": "You have no notifications.",
+  "markAsRead": "Mark as read",
+  "unread": "Unread",
+  "notifPaymentReceived": "You received {amount} from {name}.",
+  "@notifPaymentReceived": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTransferSent": "You sent {amount} to {name}.",
+  "@notifTransferSent": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notifSecurityNewDevice": "Security: sign-in from a new device detected.",
+  "notifSecurityGeneric": "Security alert on your account.",
+  "notifReminderBill": "Reminder: your utility bill is due soon.",
+  "notifReminderGeneric": "You have a banking reminder.",
+  "readAloud": "Read aloud",
+  "assistantTitle": "Sauti assistant",
+  "typeMessage": "Type your request",
+  "send": "Send",
+  "startListening": "Start speaking",
+  "stopListening": "Stop listening",
+  "stateIdle": "Tap the microphone and speak, or type below.",
+  "stateListening": "Listening…",
+  "stateProcessing": "Thinking…",
+  "stateResponding": "Speaking…",
+  "stateAwaitingConfirmation": "Waiting for your confirmation",
+  "stateError": "Something went wrong. You can try again or type.",
+  "toolRunning": "Checking {what}…",
+  "@toolRunning": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "toolWhatBalance": "your balance",
+  "toolWhatTransactions": "your transactions",
+  "toolWhatSpending": "your spending",
+  "toolWhatBeneficiaries": "your recipients",
+  "toolWhatTransfer": "the transfer details",
+  "toolWhatNotifications": "your notifications",
+  "repeat": "Repeat",
+  "stopSpeaking": "Stop speaking",
+  "clearConversation": "Clear conversation",
+  "historyTitle": "Conversation history",
+  "historyEmpty": "No conversations yet.",
+  "historyPrivacyNote": "Stored only on this device, encrypted. Amounts in cards are not stored.",
+  "providerCloud": "Cloud AI",
+  "providerLocal": "On-device assistant",
+  "fallbackNotice": "Cloud AI unavailable — answered on this device",
+  "tryAsking": "Try asking",
+  "suggestionBalance": "How much money do I have?",
+  "suggestionExplain": "Explain my last transaction",
+  "suggestionSend": "Send 20,000 BIF to Jean",
+  "suggestionSpending": "How much did I spend this month?",
+  "suggestionNotifications": "Read my notifications",
+  "reviewAndConfirm": "Review & confirm",
+  "draftCardTitle": "Transfer prepared — not sent",
+  "chooseRecipientCard": "Who do you mean?",
+  "sendToThisPerson": "Send {amount} to {name}",
+  "@sendToThisPerson": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceLanguageUnsupported": "Voice input in {language} is not available on this device. You can type, or use French voice.",
+  "@voiceLanguageUnsupported": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "useFrenchVoice": "Use French voice",
+  "noSpeechHeard": "I didn't hear anything. Tap the microphone and try again.",
+  "ttsUnavailable": "No voice for {language} on this device. Replies are shown as text.",
+  "@ttsUnavailable": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "you": "You",
+  "settingsTitle": "Settings",
+  "profileSection": "Profile",
+  "languageSetting": "Language",
+  "accessibilitySetting": "Accessibility",
+  "cloudAiSetting": "Use cloud AI (Gemini)",
+  "cloudAiDescription": "Sends minimal, anonymised banking facts to Google's Gemini via Firebase to understand free-form requests. Off: Sauti uses its on-device assistant.",
+  "cloudAiNotConfigured": "Cloud AI is not configured in this build. Sauti uses its on-device assistant.",
+  "demoControls": "Demo controls",
+  "simulateOffline": "Simulate no connection",
+  "simulateOfflineDescription": "Shows how Sauti behaves offline: cached data is labelled and transfers are blocked.",
+  "signOut": "Sign out",
+  "aboutSection": "About",
+  "environmentDemo": "Environment: DEMO (simulated bank)",
+  "environmentLive": "Environment: Firebase sandbox",
+  "accessibilityTitle": "Accessibility",
+  "textSize": "Text size",
+  "textSizeValue": "{percent}%",
+  "@textSizeValue": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "highContrast": "High contrast",
+  "highContrastDescription": "Stronger colours and borders for low vision.",
+  "voiceFeedback": "Read replies aloud",
+  "speechSpeed": "Speech speed",
+  "speechSlow": "Slow",
+  "speechNormal": "Normal",
+  "speechFast": "Fast",
+  "simplifiedMode": "Simplified mode",
+  "simplifiedModeDescription": "Fewer items on screen and larger buttons.",
+  "reduceMotion": "Reduce motion",
+  "previewText": "Preview: your balance is 250,000 BIF.",
+  "navHome": "Home",
+  "navAssistant": "Assistant",
+  "navActivity": "Activity",
+  "navSettings": "Settings",
+  "kirundiDraftNote": "Kirundi translations are a first draft under review by native speakers."
+}
