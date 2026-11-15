@@ -697,11 +697,13 @@ class AppLocalizationsRn extends AppLocalizations {
   String get providerCloud => 'AI yo kuri interineti';
 
   @override
-  String get providerLocal => 'Umufasha wo kuri telefone';
+  String get providerLocal => 'Uburyo bworoshe';
 
   @override
-  String get fallbackNotice =>
-      'AI yo kuri interineti ntiboneka — vyishuwe na telefone';
+  String get providerOnDeviceAi => 'AI yo kuri telefone · ibanga';
+
+  @override
+  String get fallbackNotice => 'AI nyamukuru ntiboneka — vyishuwe n\'iyindi';
 
   @override
   String get tryAsking => 'Gerageza kubaza';

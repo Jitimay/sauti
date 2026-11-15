@@ -703,11 +703,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get providerCloud => 'IA cloud';
 
   @override
-  String get providerLocal => 'Assistant sur l\'appareil';
+  String get providerLocal => 'Mode simple';
+
+  @override
+  String get providerOnDeviceAi => 'IA sur l\'appareil · privée';
 
   @override
   String get fallbackNotice =>
-      'IA cloud indisponible — réponse sur l\'appareil';
+      'IA principale indisponible — réponse de secours';
 
   @override
   String get tryAsking => 'Essayez de demander';

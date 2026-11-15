@@ -8,8 +8,8 @@ enum AiProviderKind {
   /// Gemini via Firebase AI Logic.
   cloud,
 
-  /// Reserved for a future on-device LLM. Not shipped: the Flutter Firebase AI
-  /// SDK has no on-device inference (see docs/AI_ARCHITECTURE.md).
+  /// An on-device LLM (e.g. Apple Foundation Models on iOS), reached through
+  /// a native bridge. Data stays on the device.
   onDeviceLlm,
 
   /// Deterministic local intent engine (not an LLM). Works offline.
@@ -64,11 +64,21 @@ final class ToolResultsTurn extends AiTurn {
   final List<ToolExecutionRecord> records;
 }
 
+/// Runs one tool call through the permissioned registry and returns the
+/// data-minimised payload for the model. Supplied by the orchestrator.
+typedef ToolExecutor = Future<Map<String, Object?>> Function(ToolCallRequest call);
+
 final class AiRequest {
-  const AiRequest({required this.language, required this.turns, required this.tools});
+  const AiRequest({required this.language, required this.turns, required this.tools, this.executeTool});
   final AppLanguage language;
   final List<AiTurn> turns;
   final List<ToolSpec> tools;
+
+  /// For providers whose runtime drives the tool loop itself (for example
+  /// Apple's Foundation Models sessions). Such providers call this for each
+  /// tool and return only the final [AiTextResponse]. Providers that return
+  /// [AiToolCallResponse] instead ignore it.
+  final ToolExecutor? executeTool;
 }
 
 sealed class AiResponse {
@@ -76,8 +86,12 @@ sealed class AiResponse {
 }
 
 final class AiTextResponse extends AiResponse {
-  const AiTextResponse(this.text);
+  const AiTextResponse(this.text, {this.servedBy});
   final String text;
+
+  /// Which inference path actually produced this text, when a provider can
+  /// use more than one (e.g. on-device first, cloud fallback).
+  final AiProviderKind? servedBy;
 }
 
 final class AiToolCallResponse extends AiResponse {
@@ -94,6 +108,12 @@ final class AiProviderException implements Exception {
   final String? detail;
   @override
   String toString() => 'AiProviderException(${kind.name}${detail == null ? '' : ': $detail'})';
+}
+
+/// Optional: a provider whose availability depends on the request language
+/// (e.g. an on-device model that does not support Kirundi).
+abstract interface class LanguageAwareProvider {
+  Future<bool> isAvailableFor(AppLanguage language);
 }
 
 abstract interface class AiProvider {

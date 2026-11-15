@@ -1339,13 +1339,19 @@ abstract class AppLocalizations {
   /// No description provided for @providerLocal.
   ///
   /// In en, this message translates to:
-  /// **'On-device assistant'**
+  /// **'Basic mode'**
   String get providerLocal;
+
+  /// Badge: the reply was produced by an on-device language model (e.g. Apple Intelligence); data stayed on the device.
+  ///
+  /// In en, this message translates to:
+  /// **'On-device AI · private'**
+  String get providerOnDeviceAi;
 
   /// No description provided for @fallbackNotice.
   ///
   /// In en, this message translates to:
-  /// **'Cloud AI unavailable — answered on this device'**
+  /// **'Preferred AI unavailable — answered by a backup'**
   String get fallbackNotice;
 
   /// No description provided for @tryAsking.

@@ -30,6 +30,8 @@ dependencies:
   local_auth: ^3.0.2
   material_ui: ^1.1.0
   permission_handler: ^13.0.2
+  sauti_hybrid_ai:
+    path: packages/sauti_hybrid_ai
   shared_preferences: ^2.5.6
   speech_to_text: ^7.5.0
   uuid: ^4.6.0

@@ -40,7 +40,7 @@ enum ToolPermission {
 }
 
 /// Who is asking for a tool to run.
-enum ToolCaller { cloudModel, localEngine, user }
+enum ToolCaller { cloudModel, onDeviceModel, localEngine, user }
 
 final class ToolSpec extends Equatable {
   const ToolSpec({

@@ -165,7 +165,7 @@ class _StatusStrip extends StatelessWidget {
           const SizedBox(width: 8),
           Flexible(
             child: Semantics(
-              label: provider == AiProviderKind.cloud ? l.providerCloud : l.providerLocal,
+              label: providerLabel(l, provider),
               excludeSemantics: true,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -174,11 +174,11 @@ class _StatusStrip extends StatelessWidget {
                   border: Border.all(color: Theme.of(context).colorScheme.outline),
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(provider == AiProviderKind.cloud ? Icons.cloud_outlined : Icons.phone_android_rounded, size: 16),
+                  Icon(providerIcon(provider), size: 16),
                   const SizedBox(width: 6),
                   Flexible(
                     child: Text(
-                      provider == AiProviderKind.cloud ? l.providerCloud : l.providerLocal,
+                      providerLabel(l, provider),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(color: st.muted),
@@ -307,7 +307,7 @@ class _AssistantMessage extends StatelessWidget {
             if (message.usedFallback)
               Text(l.fallbackNotice, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: st.warning))
             else if (message.provider != null)
-              Text(message.provider == AiProviderKind.cloud ? l.providerCloud : l.providerLocal,
+              Text(providerLabel(l, message.provider!),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(color: st.muted)),
             if (isLatest)
               TextButton.icon(
@@ -462,3 +462,16 @@ class _Composer extends StatelessWidget {
     );
   }
 }
+
+/// Honest label for the engine that answered.
+String providerLabel(AppLocalizations l, AiProviderKind p) => switch (p) {
+      AiProviderKind.cloud => l.providerCloud,
+      AiProviderKind.onDeviceLlm => l.providerOnDeviceAi,
+      AiProviderKind.localDeterministic => l.providerLocal,
+    };
+
+IconData providerIcon(AiProviderKind p) => switch (p) {
+      AiProviderKind.cloud => Icons.cloud_outlined,
+      AiProviderKind.onDeviceLlm => Icons.lock_outline_rounded,
+      AiProviderKind.localDeterministic => Icons.rule_rounded,
+    };

@@ -11,7 +11,23 @@ Verified by reading the source of `firebase_ai` **5.1.0**, the version installed
 | Function calling (`FunctionDeclaration`, `Tool.functionDeclarations`, `response.functionCalls`, `Content.functionResponses`) | ✅ Used |
 | System instructions, `GenerationConfig`, `ToolConfig` | ✅ Used |
 | App Check tokens (`useLimitedUseAppCheckTokens`) | ✅ Used |
-| **On-device / hybrid inference** | ❌ **Not available.** The source contains no `onDevice`, `InferenceMode` or hybrid API. Hybrid inference exists only in the Firebase **JS Web SDK** (Chrome desktop Prompt API), and even there it has no function calling. |
+| **On-device / hybrid inference** | ❌ **Not in the Flutter SDK.** The source contains no `onDevice`, `InferenceMode` or hybrid API. Sauti therefore uses the native Firebase SDKs through its own plugin (below). |
+
+## Hybrid inference on iOS (native plugin)
+
+`packages/sauti_hybrid_ai` is a local Flutter plugin (Swift Package Manager only, which hybrid requires). It uses Firebase iOS SDK 13.x, the version pinned by `firebase_core`:
+
+* **On-device:** Apple Foundation Models `SystemLanguageModel.default` (iOS 26+, Apple Intelligence on). Works offline, data stays on the device, supports English and French (not Kirundi).
+* **Cloud fallback:** `FirebaseAI.firebaseAI(backend: .googleAI(), useLimitedUseAppCheckTokens: true).geminiLanguageModel(name:)` (iOS 27+). Firebase 13.0 removed the interim `HybridModel`/`GenerativeModelSession` API, so this is the current Firebase AI Logic path on Apple platforms.
+* Both run in one Apple `LanguageModelSession(model:tools:instructions:)`. Sauti's `ToolSpec`s become Foundation Models tools with dynamic schemas, and the session's tool calls are forwarded to Dart, where the `ToolRegistry` validates and executes them. No banking logic lives in Swift.
+* **Routing:** on-device when the model is ready and supports the language. Cloud only when the user allows cloud AI, the device is online and Firebase is configured. Cloud fallback inside the native call happens only if no tool has run yet, so side effects (a prepared draft) are never repeated.
+* A compact system prompt (`sauti_compact_prompt.dart`) fits Apple's ~4k-token context.
+
+| | Android (Gemini Nano) | Web (Chrome) | iOS (Apple FM) |
+|---|---|---|---|
+| On-device function calling | ❌ | ❌ | ✅ |
+| On-device structured output | ✅ | ✅ | ✅ |
+| Sauti status | planned | planned | built (Dart tested; Swift needs Xcode 27) |
 
 Default model: `gemini-3.8-flash`, a stable model in the Firebase AI Logic model list at the time of writing. Override it with `--dart-define=SAUTI_AI_MODEL=...`.
 
@@ -19,22 +35,25 @@ Default model: `gemini-3.8-flash`, a stable model in the Firebase AI Logic model
 
 ```
 AgentOrchestrator
+  ├─ HybridAiProvider        (iOS: Apple on-device model → Gemini fallback;
+  │                           native tool loop via ToolExecutor)            — iOS only
   ├─ GeminiAiProvider        (cloud LLM, function calling)   — needs Firebase + network + user consent
-  ├─ [future] on-device LLM  (AiProviderKind.onDeviceLlm)    — not shipped
-  └─ LocalIntentProvider     (deterministic, offline)        — always available, never throws
+  └─ LocalIntentProvider     ("Basic mode": deterministic, offline) — always available, never throws
 ```
 
+Each reply records which engine produced it (`servedBy`) and the UI labels it: **On-device AI · private**, **Cloud AI**, or **Basic mode**. The grounding guard applies to every language model, on-device or cloud.
+
 * **Selection:** providers are tried in order. A provider is skipped when `isAvailable()` returns false. The cloud provider is unavailable when Firebase isn't configured, the device is offline, or the user turned cloud AI off in Settings.
-* **Failure:** if a provider throws `AiProviderException` (timeout, quota, blocked, invalid response, a tool loop that never converges, or ungrounded figures), the next provider answers and the reply is flagged `usedFallback`. The UI then shows "Cloud AI unavailable — answered on this device".
+* **Failure:** if a provider throws `AiProviderException` (timeout, quota, blocked, invalid response, a tool loop that never converges, or ungrounded figures), the next provider answers and the reply is flagged `usedFallback`. The UI then shows "Preferred AI unavailable — answered by a backup".
 * **Streaming:** tool progress (`AgentToolStarted`/`Finished`) streams live to the UI. The final reply is held until the provider finishes, so a failing provider never half-answers.
 
-### Why the local engine is not called "on-device AI"
+### Why basic mode is not called "on-device AI"
 
-`LocalIntentProvider` is a keyword and slot parser for EN, FR and Kirundi: amounts, recipient names, counts, categories, "yesterday", "last month". It drives **the same typed tools** as Gemini and renders replies from localized templates (`agent_phrasebook.dart`) using typed tool output. It is predictable and testable, but it is not an LLM. It answers "I didn't understand" rather than guessing.
+`LocalIntentProvider` ("Basic mode" in the UI) is a keyword and slot parser for EN, FR and Kirundi: amounts, recipient names, counts, categories, "ejo hashize", "last month". It drives **the same typed tools** as the language models and renders replies from localized templates (`agent_phrasebook.dart`) using typed tool output. It is predictable and testable, but it is not an LLM. It answers "I didn't understand" rather than guessing. It exists for the phones most Sauti users have: no on-device model and often no signal.
 
-### Future on-device LLM
+### Next on-device platforms
 
-The `AiProvider` interface is the seam. Candidates to evaluate are Gemma-class models via MediaPipe LLM Inference or a maintained Flutter wrapper. Requirements: tool calling or constrained JSON output, acceptable latency on mid-range Android, and model size. This needs measurement on real devices before adoption.
+Android (Gemini Nano through the Firebase AI Logic Android SDK) and Web (Chrome built-in AI through the Firebase JS SDK) go in the same plugin. Neither supports on-device function calling, so there the on-device model will use structured output (intent and slots as JSON) and Sauti's tools will run deterministically.
 
 ## Tool system
 

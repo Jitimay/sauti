@@ -155,6 +155,9 @@ final class AgentBloc extends Bloc<AgentUiEvent, AgentState> {
             final awaiting = message.cards.any((c) => c is TransferDraftCard);
             emit(state.copyWith(
               messages: [...state.messages, message],
+              // The engine that actually answered (an on-device-first provider
+              // may have used its cloud fallback).
+              provider: () => message.provider ?? state.provider,
               phase: awaiting ? AgentPhase.awaitingConfirmation : AgentPhase.idle,
               activeTool: () => null,
               lastReplyViaVoice: e.viaVoice,

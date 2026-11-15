@@ -67,7 +67,7 @@ void main() {
     await t.tap(find.text('“How much money do I have?”'));
     await settle(t);
     expect(find.textContaining('Your Compte courant has 250,000 BIF available'), findsOneWidget);
-    expect(find.text('On-device assistant'), findsWidgets);
+    expect(find.text('Basic mode'), findsWidgets);
   });
 
   testWidgets('Scenario 10: complete a banking task by voice, reply is spoken', (t) async {

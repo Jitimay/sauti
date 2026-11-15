@@ -15,7 +15,7 @@ You say what you want: *"How much money do I have?"*, *"Explain my last transact
 | Area | What works |
 |---|---|
 | AI banking agent | Voice and text input; spoken replies; conversation history; listening, thinking and tool-running indicators; structured cards; error recovery |
-| Hybrid AI | Gemini via **Firebase AI Logic** with typed function calling, plus a **deterministic on-device engine** (offline). Automatic fallback; a grounding guard against invented figures. |
+| Hybrid AI | **iOS: Apple's on-device model first** (Foundation Models), **Gemini via Firebase AI Logic** as its cloud fallback, in one `LanguageModelSession` that calls Sauti's tools. Every platform: Gemini via Firebase AI Logic with typed function calling, plus a **basic mode** (a deterministic, offline intent engine) for phones with no on-device model and no signal. Each reply is labelled with the engine that produced it; a grounding guard discards invented figures. |
 | Tools | `get_account_balance`, `get_recent_transactions`, `search_transactions`, `get_transaction_details`, `explain_transaction`, `calculate_monthly_spending`, `list_beneficiaries`, `prepare_transfer`, `confirm_transfer`, `get_notifications` |
 | Transfers | Saved recipients only, then a draft, then device biometric/passcode (or typed password), then an explicit **Send**, then a bank-verified receipt. State machine, idempotency, limits, cancel, no offline queueing. |
 | Banking | Dashboard, accounts, transaction history with search and filters, details, spending insights (deterministic, integer money), notifications |
@@ -102,7 +102,7 @@ The latest results are in **[docs/TESTING.md](docs/TESTING.md)**.
 
 ## Known limitations
 
-* **No on-device LLM.** The Flutter Firebase AI Logic SDK (`firebase_ai` 5.1.0) has no on-device inference. The offline tier is a deterministic intent engine, labelled as such.
+* **On-device AI is iOS-only so far, and not yet run on a Mac.** The Flutter `firebase_ai` package (5.1.0) has no hybrid API, so Sauti reaches Apple Foundation Models and Firebase's `GeminiLanguageModel` through its own native plugin (`packages/sauti_hybrid_ai`). The Dart side is unit-tested; the Swift bridge still has to be compiled and run in Xcode 27 (see [docs/IOS_HYBRID_SETUP.md](docs/IOS_HYBRID_SETUP.md)). Android (Gemini Nano) and Web (Chrome) bridges are planned.
 * **Kirundi voice** depends on the device's speech engines and was **not verified** on a device with Kirundi voices. Text and French-voice fallbacks are built in. Kirundi translations are a first draft pending native-speaker review.
 * **Simulated or sandbox banking only.** No licensed bank integration exists. `BankRepository` is the seam for one.
 * **Live mode was not exercised end-to-end.** No Firebase project or credentials were available while building. The Firebase code compiles and is unit-tested at its boundaries, but Gemini, App Check, Firestore and Functions have not been run against a real project.

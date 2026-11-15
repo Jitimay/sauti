@@ -696,10 +696,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerCloud => 'Cloud AI';
 
   @override
-  String get providerLocal => 'On-device assistant';
+  String get providerLocal => 'Basic mode';
 
   @override
-  String get fallbackNotice => 'Cloud AI unavailable — answered on this device';
+  String get providerOnDeviceAi => 'On-device AI · private';
+
+  @override
+  String get fallbackNotice =>
+      'Preferred AI unavailable — answered by a backup';
 
   @override
   String get tryAsking => 'Try asking';

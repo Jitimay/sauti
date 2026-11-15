@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../../../../core/l10n/app_language.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/utils/clock.dart';
@@ -82,7 +84,7 @@ final class AgentOrchestrator {
   }) async* {
     final available = <AiProvider>[];
     for (final p in _providers) {
-      if (await _safeAvailable(p)) available.add(p);
+      if (await _safeAvailable(p, language)) available.add(p);
     }
     if (available.isEmpty) available.add(_providers.last);
 
@@ -114,9 +116,9 @@ final class AgentOrchestrator {
     }
   }
 
-  Future<bool> _safeAvailable(AiProvider p) async {
+  Future<bool> _safeAvailable(AiProvider p, AppLanguage language) async {
     try {
-      return await p.isAvailable();
+      return await (p is LanguageAwareProvider ? (p as LanguageAwareProvider).isAvailableFor(language) : p.isAvailable());
     } catch (_) {
       return false;
     }
@@ -129,7 +131,11 @@ final class AgentOrchestrator {
     AppLanguage language, {
     required bool usedFallback,
   }) async* {
-    final caller = provider.kind == AiProviderKind.cloud ? ToolCaller.cloudModel : ToolCaller.localEngine;
+    final caller = switch (provider.kind) {
+      AiProviderKind.cloud => ToolCaller.cloudModel,
+      AiProviderKind.onDeviceLlm => ToolCaller.onDeviceModel,
+      AiProviderKind.localDeterministic => ToolCaller.localEngine,
+    };
     final ctx = ToolContext(caller: caller, language: language, granted: granted, drafts: drafts);
     final turns = <AiTurn>[
       for (final m in history.reversed.take(historyWindow).toList().reversed)
@@ -138,9 +144,32 @@ final class AgentOrchestrator {
     ];
     final tools = _registry.specsFor(caller, granted);
     final records = <ToolExecutionRecord>[];
+    var nativeCalls = 0;
 
     for (var round = 0; round <= maxToolRounds; round++) {
-      final response = await provider.generateResponse(AiRequest(language: language, turns: turns, tools: tools));
+      // Providers whose runtime drives the tool loop (Apple Foundation Models)
+      // call back into [executeTool]; progress events are streamed live while
+      // the provider is still working.
+      final live = StreamController<AgentEvent>();
+      Future<Map<String, Object?>> executeTool(ToolCallRequest call) async {
+        if (live.isClosed || ++nativeCalls > maxToolRounds * 5) {
+          return const {'status': 'rejected', 'error': 'too_many_tool_calls'};
+        }
+        live.add(AgentToolStarted(call.name));
+        final rec = await _registry.execute(call, ctx);
+        records.add(rec);
+        if (!live.isClosed) live.add(AgentToolFinished(rec));
+        return rec.modelPayload;
+      }
+
+      final outcome = provider
+          .generateResponse(AiRequest(language: language, turns: turns, tools: tools, executeTool: executeTool))
+          .then<Object>((r) => r, onError: (Object e, StackTrace st) => _Failed(e, st))
+          .whenComplete(live.close);
+      yield* live.stream;
+      final result = await outcome;
+      if (result is _Failed) Error.throwWithStackTrace(result.error, result.stackTrace);
+      final response = result as AiResponse;
       switch (response) {
         case AiToolCallResponse(:final calls, :final providerNative):
           if (round == maxToolRounds || calls.isEmpty) {
@@ -157,8 +186,10 @@ final class AgentOrchestrator {
           turns
             ..add(ToolCallsTurn(calls.take(5).toList(), providerNative: providerNative))
             ..add(ToolResultsTurn(roundRecords));
-        case AiTextResponse(:final text):
-          if (provider.kind == AiProviderKind.cloud) {
+        case AiTextResponse(:final text, :final servedBy):
+          // Any language model (cloud or on-device) must be grounded in tool
+          // output; only the deterministic engine renders from typed data.
+          if ((servedBy ?? provider.kind) != AiProviderKind.localDeterministic) {
             final bad = guard.ungroundedAmounts(text, userText: userText, records: records);
             if (bad.isNotEmpty) {
               throw AiProviderException(AiErrorKind.invalidResponse, 'ungrounded amounts: $bad');
@@ -175,7 +206,7 @@ final class AgentOrchestrator {
             timestamp: _clock.now(),
             cards: _dedupe(cards),
             toolsUsed: [for (final r in records) r.request.name],
-            provider: provider.kind,
+            provider: servedBy ?? provider.kind,
             usedFallback: usedFallback,
           ));
           return;
@@ -191,4 +222,11 @@ final class AgentOrchestrator {
     }
     return byType.values.toList();
   }
+}
+
+/// Carries a provider error across the live-event stream boundary.
+final class _Failed {
+  const _Failed(this.error, this.stackTrace);
+  final Object error;
+  final StackTrace stackTrace;
 }

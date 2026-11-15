@@ -2,9 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:sauti_hybrid_ai/sauti_hybrid_ai.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
@@ -16,6 +18,7 @@ import '../../core/network/network_status.dart';
 import '../../core/utils/clock.dart';
 import '../../features/ai_agent/data/cloud/gemini_ai_provider.dart';
 import '../../features/ai_agent/data/local/local_intent_provider.dart';
+import '../../features/ai_agent/data/on_device/hybrid_ai_provider.dart';
 import '../../features/ai_agent/data/repositories/secure_conversation_repository.dart';
 import '../../features/ai_agent/domain/providers/ai_provider.dart';
 import '../../features/ai_agent/domain/repositories/conversation_repository.dart';
@@ -60,6 +63,7 @@ final class DependencyOverrides {
     this.synthesizer,
     this.authenticator,
     this.bankLatency,
+    this.hybridAi,
   });
 
   final SharedPreferences? prefs;
@@ -71,6 +75,9 @@ final class DependencyOverrides {
   final SpeechSynthesizer? synthesizer;
   final TransferAuthenticator? authenticator;
   final Duration? bankLatency;
+
+  /// Native hybrid inference bridge. Defaults to the platform plugin on iOS.
+  final HybridAiClient? hybridAi;
 }
 
 /// Composition root. The demo/live boundary is decided here and nowhere else.
@@ -152,13 +159,21 @@ Future<void> configureDependencies({
         ], logger: sl()))
     ..registerLazySingleton<ConversationRepository>(() => o.conversations ?? SecureConversationRepository(sl()))
     ..registerLazySingleton(() {
+      Future<bool> cloudAllowed() async =>
+          firebaseReady &&
+          sl<SettingsRepository>().loadPreferences().cloudAiEnabled &&
+          await sl<NetworkStatus>().isOnline();
+      // Hybrid tier: on-device model first (Apple Foundation Models), Gemini
+      // via Firebase AI Logic as its cloud fallback. iOS only for now.
+      final hybridClient = o.hybridAi ?? (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS ? SautiHybridAi() : null);
       final providers = <AiProvider>[
+        if (hybridClient != null)
+          HybridAiProvider(client: hybridClient, cloudAllowed: cloudAllowed, now: clock.now, cloudModel: config.aiModel),
         if (firebaseReady)
           GeminiAiProvider.firebase(
             model: config.aiModel,
             now: clock.now,
-            isEnabled: () async =>
-                sl<SettingsRepository>().loadPreferences().cloudAiEnabled && await sl<NetworkStatus>().isOnline(),
+            isEnabled: cloudAllowed,
           ),
         LocalIntentProvider(now: clock.now),
       ];

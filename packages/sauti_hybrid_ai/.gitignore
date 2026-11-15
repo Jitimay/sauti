@@ -1,0 +1,7 @@
+.dart_tool/
+build/
+pubspec.lock
+.flutter-plugins
+.flutter-plugins-dependencies
+ios/sauti_hybrid_ai/.build/
+ios/sauti_hybrid_ai/.swiftpm/
