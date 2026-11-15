@@ -19,6 +19,7 @@ import '../../core/utils/clock.dart';
 import '../../features/ai_agent/data/cloud/gemini_ai_provider.dart';
 import '../../features/ai_agent/data/local/local_intent_provider.dart';
 import '../../features/ai_agent/data/on_device/hybrid_ai_provider.dart';
+import '../../features/ai_agent/data/on_device/hybrid_intent_provider.dart';
 import '../../features/ai_agent/data/repositories/secure_conversation_repository.dart';
 import '../../features/ai_agent/domain/providers/ai_provider.dart';
 import '../../features/ai_agent/domain/repositories/conversation_repository.dart';
@@ -64,6 +65,7 @@ final class DependencyOverrides {
     this.authenticator,
     this.bankLatency,
     this.hybridAi,
+    this.hybridToolLoop,
   });
 
   final SharedPreferences? prefs;
@@ -76,8 +78,11 @@ final class DependencyOverrides {
   final TransferAuthenticator? authenticator;
   final Duration? bankLatency;
 
-  /// Native hybrid inference bridge. Defaults to the platform plugin on iOS.
+  /// Hybrid inference bridge. Defaults to the platform client.
   final HybridAiClient? hybridAi;
+
+  /// Whether [hybridAi] drives a native tool loop (Apple). Defaults to iOS.
+  final bool? hybridToolLoop;
 }
 
 /// Composition root. The demo/live boundary is decided here and nowhere else.
@@ -143,6 +148,13 @@ Future<void> configureDependencies({
 
   // ---- AI agent ----
   final clock = sl<Clock>();
+  // Hybrid inference bridge (Firebase AI Logic): Apple Foundation Models on
+  // iOS (works without Firebase; Gemini fallback needs it), Gemini Nano on
+  // Android and in Chrome (needs Firebase).
+  final isApple = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+  final hybridClient = o.hybridAi ?? (isApple || firebaseReady ? createHybridAiClient() : null);
+  if (hybridClient != null) sl.registerSingleton<HybridAiClient>(hybridClient);
+  final nativeToolLoop = o.hybridToolLoop ?? isApple;
   sl
     ..registerSingleton<SessionDraftStore>(SessionDraftStore())
     ..registerLazySingleton(() => ToolRegistry([
@@ -163,12 +175,19 @@ Future<void> configureDependencies({
           firebaseReady &&
           sl<SettingsRepository>().loadPreferences().cloudAiEnabled &&
           await sl<NetworkStatus>().isOnline();
-      // Hybrid tier: on-device model first (Apple Foundation Models), Gemini
-      // via Firebase AI Logic as its cloud fallback. iOS only for now.
-      final hybridClient = o.hybridAi ?? (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS ? SautiHybridAi() : null);
       final providers = <AiProvider>[
-        if (hybridClient != null)
+        // On-device tier. iOS: Apple's session drives the tool loop, with
+        // Gemini (Firebase AI Logic) as its cloud fallback. Android/Chrome:
+        // Gemini Nano labels the intent, Sauti's tools and templates answer.
+        if (hybridClient != null && nativeToolLoop)
           HybridAiProvider(client: hybridClient, cloudAllowed: cloudAllowed, now: clock.now, cloudModel: config.aiModel),
+        if (hybridClient != null && !nativeToolLoop)
+          HybridIntentProvider(
+            client: hybridClient,
+            cloudAllowed: cloudAllowed,
+            now: clock.now,
+            cloudModel: config.aiModel,
+          ),
         if (firebaseReady)
           GeminiAiProvider.firebase(
             model: config.aiModel,

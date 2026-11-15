@@ -15,7 +15,7 @@ You say what you want: *"How much money do I have?"*, *"Explain my last transact
 | Area | What works |
 |---|---|
 | AI banking agent | Voice and text input; spoken replies; conversation history; listening, thinking and tool-running indicators; structured cards; error recovery |
-| Hybrid AI | **iOS: Apple's on-device model first** (Foundation Models), **Gemini via Firebase AI Logic** as its cloud fallback, in one `LanguageModelSession` that calls Sauti's tools. Every platform: Gemini via Firebase AI Logic with typed function calling, plus a **basic mode** (a deterministic, offline intent engine) for phones with no on-device model and no signal. Each reply is labelled with the engine that produced it; a grounding guard discards invented figures. |
+| Hybrid AI (Firebase AI Logic) | **On-device first on all three platforms.** **Android:** Gemini Nano via the Firebase AI Logic hybrid SDK (`PREFER_ON_DEVICE`). **Web (Chrome):** Chrome's built-in Gemini Nano via the Firebase JS SDK hybrid mode. **iOS:** Apple Foundation Models with Firebase's `GeminiLanguageModel` as cloud fallback in one `LanguageModelSession`. On Android and Web the on-device model only labels the request as a JSON intent: Sauti's typed tools fetch the data and its templates write the reply, so **the model never writes a figure** and banking data never reaches a model. Cloud tier: Gemini with typed function calling. Offline without a model: **basic mode** (deterministic intent engine). Each reply is labelled *On-device AI · private*, *Cloud AI* or *Basic mode*. |
 | Tools | `get_account_balance`, `get_recent_transactions`, `search_transactions`, `get_transaction_details`, `explain_transaction`, `calculate_monthly_spending`, `list_beneficiaries`, `prepare_transfer`, `confirm_transfer`, `get_notifications` |
 | Transfers | Saved recipients only, then a draft, then device biometric/passcode (or typed password), then an explicit **Send**, then a bank-verified receipt. State machine, idempotency, limits, cancel, no offline queueing. |
 | Banking | Dashboard, accounts, transaction history with search and filters, details, spending insights (deterministic, integer money), notifications |
@@ -79,6 +79,7 @@ All configuration is passed with `--dart-define`. See `config/env.example.json` 
 | `SAUTI_FUNCTIONS_REGION` | `europe-west1` | Must match the deployed functions |
 | `FIREBASE_*` | empty | Firebase client options. If empty, cloud AI is disabled and the on-device engine is used. |
 | `SAUTI_APP_CHECK_DEBUG` | `false` | Use App Check debug providers (debug builds only) |
+| `SAUTI_APP_CHECK_DEBUG_TOKEN` | empty | A debug token registered in the Firebase console, for judging/test builds only. Revoke it afterwards. |
 
 ```bash
 flutter run --dart-define-from-file=config/env.json
@@ -102,7 +103,7 @@ The latest results are in **[docs/TESTING.md](docs/TESTING.md)**.
 
 ## Known limitations
 
-* **On-device AI is iOS-only so far, and not yet run on a Mac.** The Flutter `firebase_ai` package (5.1.0) has no hybrid API, so Sauti reaches Apple Foundation Models and Firebase's `GeminiLanguageModel` through its own native plugin (`packages/sauti_hybrid_ai`). The Dart side is unit-tested; the Swift bridge still has to be compiled and run in Xcode 27 (see [docs/IOS_HYBRID_SETUP.md](docs/IOS_HYBRID_SETUP.md)). Android (Gemini Nano) and Web (Chrome) bridges are planned.
+* **On-device AI needs supported hardware.** Gemini Nano runs on Android phones supported by ML Kit's Prompt API and in desktop Chrome 139+ (with the Prompt API flag); Apple Foundation Models needs an Apple Intelligence device on iOS 26+ (Gemini fallback iOS 27+). All three bridges build (Android APK, web, iOS simulator) and are unit-tested, but have **not yet been run on such hardware**. On-device labelling is limited to English and French; Kirundi uses the cloud agent or basic mode. Firebase's on-device SDKs are experimental/preview.
 * **Kirundi voice** depends on the device's speech engines and was **not verified** on a device with Kirundi voices. Text and French-voice fallbacks are built in. Kirundi translations are a first draft pending native-speaker review.
 * **Simulated or sandbox banking only.** No licensed bank integration exists. `BankRepository` is the seam for one.
 * **Live mode was not exercised end-to-end.** No Firebase project or credentials were available while building. The Firebase code compiles and is unit-tested at its boundaries, but Gemini, App Check, Firestore and Functions have not been run against a real project.
@@ -111,4 +112,8 @@ The latest results are in **[docs/TESTING.md](docs/TESTING.md)**.
 
 ## Documentation
 
-[Architecture](docs/ARCHITECTURE.md) · [AI architecture](docs/AI_ARCHITECTURE.md) · [Security](docs/SECURITY.md) · [Firebase setup](docs/FIREBASE_SETUP.md) · [Testing](docs/TESTING.md) · [Demo guide](docs/DEMO_GUIDE.md) · [Roadmap](docs/ROADMAP.md) · [Implementation plan](IMPLEMENTATION_PLAN.md)
+[Architecture](docs/ARCHITECTURE.md) · [AI architecture](docs/AI_ARCHITECTURE.md) · [Security](docs/SECURITY.md) · [Firebase setup](docs/FIREBASE_SETUP.md) · [Testing](docs/TESTING.md) · [Demo guide](docs/DEMO_GUIDE.md) · [Roadmap](docs/ROADMAP.md) · [Implementation plan](IMPLEMENTATION_PLAN.md) · [Hackathon submission](docs/SUBMISSION.md)
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE).

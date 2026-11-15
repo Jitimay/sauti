@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:sauti_hybrid_ai/sauti_hybrid_ai.dart';
 
 import '../../../../app/di/injection.dart';
 import '../../../../app/router/routes.dart';
@@ -64,6 +65,10 @@ class SettingsPage extends StatelessWidget {
                 value: cloudAvailable && prefs.cloudAiEnabled,
                 onChanged: cloudAvailable ? (v) => context.read<PreferencesCubit>().setCloudAi(v) : null,
               ),
+              if (sl.isRegistered<HybridAiClient>()) ...[
+                const Divider(height: 1),
+                OnDeviceAiTile(client: sl<HybridAiClient>()),
+              ],
             ]),
           ),
           if (config.isDemo) ...[
@@ -114,4 +119,66 @@ class _SimulateOfflineTileState extends State<_SimulateOfflineTile> {
           onChanged: _switch.set,
         ),
       );
+}
+
+/// State of the on-device model (Gemini Nano / Apple Intelligence) with a
+/// one-tap download. The Firebase AI Logic SDKs never download the model by
+/// themselves, and Chrome only allows it from a user gesture.
+class OnDeviceAiTile extends StatefulWidget {
+  const OnDeviceAiTile({super.key, required this.client});
+  final HybridAiClient client;
+
+  @override
+  State<OnDeviceAiTile> createState() => _OnDeviceAiTileState();
+}
+
+class _OnDeviceAiTileState extends State<OnDeviceAiTile> {
+  OnDeviceState? _state;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    final s = await widget.client.status(languageCode: 'en');
+    if (mounted) setState(() => _state = s.onDeviceState);
+  }
+
+  Future<void> _download() async {
+    setState(() => _state = OnDeviceState.downloading);
+    final s = await widget.client.prepareOnDevice();
+    if (mounted) setState(() => _state = s);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final state = _state;
+    final subtitle = switch (state) {
+      null => '',
+      OnDeviceState.available => l.onDeviceAiReady,
+      OnDeviceState.downloadable => l.onDeviceAiDownloadable,
+      OnDeviceState.downloading => l.onDeviceAiDownloading,
+      OnDeviceState.unavailable => l.onDeviceAiUnavailable,
+    };
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      child: ListTile(
+        leading: Icon(state == OnDeviceState.available ? Icons.lock_rounded : Icons.phone_android_rounded),
+        title: Text(l.onDeviceAiSetting),
+        subtitle: Text(subtitle),
+        isThreeLine: true,
+        trailing: switch (state) {
+          OnDeviceState.downloadable => FilledButton(onPressed: _download, child: Text(l.onDeviceAiDownload)),
+          OnDeviceState.downloading || null =>
+            const SizedBox.square(dimension: 24, child: CircularProgressIndicator(strokeWidth: 3)),
+          OnDeviceState.available => const Icon(Icons.check_circle_rounded),
+          OnDeviceState.unavailable => null,
+        },
+      ),
+    );
+  }
 }

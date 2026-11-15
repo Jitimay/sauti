@@ -52,6 +52,12 @@ public final class SautiHybridAiPlugin: NSObject, FlutterPlugin {
           DispatchQueue.main.async { result(flutterError) }
         }
       }
+    case "prepareOnDevice":
+      // Apple downloads and manages the system model itself.
+      result(status(language: "en")["onDeviceState"])
+    case "generateJson":
+      // On Apple platforms Sauti uses the native tool loop (`respond`).
+      result(FlutterError(code: "unavailable", message: "use respond on Apple platforms", details: nil))
     default:
       result(FlutterMethodNotImplemented)
     }
@@ -65,6 +71,8 @@ public final class SautiHybridAiPlugin: NSObject, FlutterPlugin {
       "onDeviceReason": "unsupportedOS",
       "onDeviceSupportsLanguage": false,
       "cloud": cloudAvailable(),
+      "onDeviceState": "unavailable",
+      "nativeToolLoop": true,
     ]
     #if canImport(FoundationModels)
       if #available(iOS 26.0, *) {
@@ -73,8 +81,10 @@ public final class SautiHybridAiPlugin: NSObject, FlutterPlugin {
         case .available:
           out["onDevice"] = true
           out["onDeviceReason"] = "available"
+          out["onDeviceState"] = "available"
         case .unavailable(let reason):
           out["onDeviceReason"] = String(describing: reason)
+          if case .modelNotReady = reason { out["onDeviceState"] = "downloading" }
         @unknown default:
           out["onDeviceReason"] = "unknown"
         }
@@ -85,7 +95,7 @@ public final class SautiHybridAiPlugin: NSObject, FlutterPlugin {
   }
 
   private func cloudAvailable() -> Bool {
-    #if compiler(>=6.4) && canImport(FoundationModels) && canImport(FirebaseAILogic) && canImport(GeminiLanguageModel)
+    #if compiler(>=6.4) && canImport(FoundationModels) && canImport(FirebaseAILogic)
       if #available(iOS 27.0, *) {
         return FirebaseApp.app() != nil
       }
@@ -140,7 +150,7 @@ public final class SautiHybridAiPlugin: NSObject, FlutterPlugin {
       }
 
       if request.allowCloud {
-        #if compiler(>=6.4) && canImport(FirebaseAILogic) && canImport(GeminiLanguageModel)
+        #if compiler(>=6.4) && canImport(FirebaseAILogic)
           if #available(iOS 27.0, *), FirebaseApp.app() != nil {
             let ai = FirebaseAI.firebaseAI(backend: .googleAI(), useLimitedUseAppCheckTokens: true)
             let session = LanguageModelSession(

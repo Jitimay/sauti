@@ -862,4 +862,25 @@ class AppLocalizationsRn extends AppLocalizations {
   @override
   String get kirundiDraftNote =>
       'Ubusobanuro mu Kirundi ni ubwa mbere, buriko burasuzumwa.';
+
+  @override
+  String get onDeviceAiSetting => 'AI yihishije kuri telefone (Gemini Nano)';
+
+  @override
+  String get onDeviceAiReady =>
+      'Iriteguye. Ivyo usaba vyumvikanira kuri iyi telefone, kandi bikora ata interineti.';
+
+  @override
+  String get onDeviceAiDownloadable =>
+      'Irashobora gukora kuri iyi telefone. Yimanure rimwe (biruta kuri Wi-Fi) kugira ngo ivyo usaba bigume kuri telefone.';
+
+  @override
+  String get onDeviceAiDownloading => 'Turiko turimanura AI ya telefone…';
+
+  @override
+  String get onDeviceAiUnavailable =>
+      'Ntikora kuri iyi telefone. Sauti ikoresha AI yo kuri interineti canke uburyo bworoshe.';
+
+  @override
+  String get onDeviceAiDownload => 'Kumanura';
 }

@@ -47,17 +47,16 @@ final class BankSnapshot {
     List<BankNotification>? notifications,
     List<Beneficiary>? beneficiaries,
     required DateTime at,
-  }) =>
-      BankSnapshot(
-        accounts: accounts ?? current?.accounts,
-        transactions: transactions ?? current?.transactions,
-        notifications: notifications ?? current?.notifications,
-        beneficiaries: beneficiaries ?? current?.beneficiaries,
-        savedAt: at,
-        accountsAt: accounts != null ? at : current?.accountsAt,
-        transactionsAt: transactions != null ? at : current?.transactionsAt,
-        notificationsAt: notifications != null ? at : current?.notificationsAt,
-      );
+  }) => BankSnapshot(
+    accounts: accounts ?? current?.accounts,
+    transactions: transactions ?? current?.transactions,
+    notifications: notifications ?? current?.notifications,
+    beneficiaries: beneficiaries ?? current?.beneficiaries,
+    savedAt: at,
+    accountsAt: accounts != null ? at : current?.accountsAt,
+    transactionsAt: transactions != null ? at : current?.transactionsAt,
+    notificationsAt: notifications != null ? at : current?.notificationsAt,
+  );
 }
 
 abstract interface class BankSnapshotStore {
@@ -78,6 +77,18 @@ final class SecureBankSnapshotStore implements BankSnapshotStore {
 
   final FlutterSecureStorage _storage;
   final String _key;
+
+  /// Saves are read-modify-write. Screens refresh several sections at once
+  /// (the dashboard loads accounts, transactions and notifications in
+  /// parallel), so writes are serialized: otherwise the last write would
+  /// silently drop the sections saved by the others.
+  Future<void> _tail = Future<void>.value();
+
+  Future<void> _serialized(Future<void> Function() body) {
+    final next = _tail.then((_) => body());
+    _tail = next.catchError((Object _) {});
+    return next;
+  }
 
   @override
   Future<BankSnapshot?> read() async {
@@ -112,7 +123,7 @@ final class SecureBankSnapshotStore implements BankSnapshotStore {
     List<BankNotification>? notifications,
     List<Beneficiary>? beneficiaries,
     required DateTime at,
-  }) async {
+  }) => _serialized(() async {
     final s = BankSnapshot.merge(
       await read(),
       accounts: accounts,
@@ -132,10 +143,10 @@ final class SecureBankSnapshotStore implements BankSnapshotStore {
       'notificationsAt': s.notificationsAt.toIso8601String(),
     };
     await _storage.write(key: _key, value: jsonEncode(data));
-  }
+  });
 
   @override
-  Future<void> clear() => _storage.delete(key: _key);
+  Future<void> clear() => _serialized(() => _storage.delete(key: _key));
 }
 
 final class InMemoryBankSnapshotStore implements BankSnapshotStore {

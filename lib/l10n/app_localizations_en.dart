@@ -863,4 +863,25 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get kirundiDraftNote =>
       'Kirundi translations are a first draft under review by native speakers.';
+
+  @override
+  String get onDeviceAiSetting => 'Private on-device AI (Gemini Nano)';
+
+  @override
+  String get onDeviceAiReady =>
+      'Ready. Your requests are understood on this phone and work without internet.';
+
+  @override
+  String get onDeviceAiDownloadable =>
+      'Available for this device. Download it once (Wi-Fi recommended) to keep your requests on the phone.';
+
+  @override
+  String get onDeviceAiDownloading => 'Downloading the on-device model…';
+
+  @override
+  String get onDeviceAiUnavailable =>
+      'Not supported on this device. Sauti uses cloud AI or basic mode instead.';
+
+  @override
+  String get onDeviceAiDownload => 'Download';
 }

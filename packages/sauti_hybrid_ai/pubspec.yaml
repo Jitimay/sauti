@@ -1,5 +1,5 @@
 name: sauti_hybrid_ai
-description: "Native hybrid inference bridge for Sauti: on-device model first (Apple Foundation Models on iOS), Gemini via Firebase AI Logic as cloud fallback."
+description: "Hybrid inference bridge for Sauti through Firebase AI Logic: on-device first (Apple Foundation Models on iOS, Gemini Nano on Android and Chrome), cloud Gemini as fallback."
 version: 0.1.0
 publish_to: 'none'
 
@@ -19,5 +19,8 @@ dev_dependencies:
 flutter:
   plugin:
     platforms:
+      android:
+        package: com.sauti.hybrid_ai
+        pluginClass: SautiHybridAiPlugin
       ios:
         pluginClass: SautiHybridAiPlugin

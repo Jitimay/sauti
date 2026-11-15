@@ -376,7 +376,9 @@
   "providerCloud": "Cloud AI",
   "providerLocal": "Basic mode",
   "providerOnDeviceAi": "On-device AI · private",
-  "@providerOnDeviceAi": {"description": "Badge: the reply was produced by an on-device language model (e.g. Apple Intelligence); data stayed on the device."},
+  "@providerOnDeviceAi": {
+    "description": "Badge: the reply was produced by an on-device language model (e.g. Apple Intelligence); data stayed on the device."
+  },
   "fallbackNotice": "Preferred AI unavailable — answered by a backup",
   "tryAsking": "Try asking",
   "suggestionBalance": "How much money do I have?",
@@ -456,5 +458,11 @@
   "navAssistant": "Assistant",
   "navActivity": "Activity",
   "navSettings": "Settings",
-  "kirundiDraftNote": "Kirundi translations are a first draft under review by native speakers."
+  "kirundiDraftNote": "Kirundi translations are a first draft under review by native speakers.",
+  "onDeviceAiSetting": "Private on-device AI (Gemini Nano)",
+  "onDeviceAiReady": "Ready. Your requests are understood on this phone and work without internet.",
+  "onDeviceAiDownloadable": "Available for this device. Download it once (Wi-Fi recommended) to keep your requests on the phone.",
+  "onDeviceAiDownloading": "Downloading the on-device model…",
+  "onDeviceAiUnavailable": "Not supported on this device. Sauti uses cloud AI or basic mode instead.",
+  "onDeviceAiDownload": "Download"
 }

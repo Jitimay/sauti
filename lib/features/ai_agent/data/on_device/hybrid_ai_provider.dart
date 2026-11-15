@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:sauti_hybrid_ai/sauti_hybrid_ai.dart';
 
 import '../../../../core/l10n/app_language.dart';
@@ -21,6 +23,7 @@ final class HybridAiProvider implements AiProvider, LanguageAwareProvider {
     required this._now,
     required this.cloudModel,
     this.historyTurns = 4,
+    this.timeout = const Duration(seconds: 30),
   });
 
   final HybridAiClient _client;
@@ -32,6 +35,9 @@ final class HybridAiProvider implements AiProvider, LanguageAwareProvider {
 
   /// Prior user/assistant turns included in the prompt (context is small).
   final int historyTurns;
+
+  /// Upper bound for one native request, including its tool calls.
+  final Duration timeout;
 
   @override
   AiProviderKind get kind => AiProviderKind.onDeviceLlm;
@@ -81,12 +87,17 @@ final class HybridAiProvider implements AiProvider, LanguageAwareProvider {
         allowOnDevice: route.onDevice,
         allowCloud: route.cloud,
         cloudModel: cloudModel,
-        onToolCall: (name, args) => execute(ToolCallRequest(id: 'native-${callSeq++}', name: name, args: args)),
-      );
+        onToolCall: (name, args) async =>
+            (await execute(ToolCallRequest(id: 'native-${callSeq++}', name: name, args: args))).modelPayload,
+      ).timeout(timeout);
       return AiTextResponse(
         result.text,
         servedBy: result.source == HybridSource.cloud ? AiProviderKind.cloud : AiProviderKind.onDeviceLlm,
       );
+    } on TimeoutException {
+      // A stuck generation must never freeze the assistant (AgentBloc drops
+      // new messages while one is running); the orchestrator falls back.
+      throw const AiProviderException(AiErrorKind.timeout, 'on-device generation timed out');
     } on HybridAiException catch (e) {
       throw AiProviderException(_errorKind(e.code), '${e.code}: ${e.message ?? ''}');
     }

@@ -59,6 +59,20 @@ final class FakeHybridClient implements HybridAiClient {
     final text = await script(recordingTool);
     return HybridResult(text: text, source: source);
   }
+
+  @override
+  Future<HybridJsonResult> generateJson({
+    required String instructions,
+    required String prompt,
+    required Map<String, Object?> schema,
+    required bool allowOnDevice,
+    required bool allowCloud,
+    required String cloudModel,
+  }) =>
+      throw const HybridAiException('unavailable');
+
+  @override
+  Future<OnDeviceState> prepareOnDevice() async => OnDeviceState.available;
 }
 
 void main() {

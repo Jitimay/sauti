@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../../../../core/error/failure.dart';
 import '../../../../core/l10n/app_language.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/utils/clock.dart';
@@ -151,15 +152,21 @@ final class AgentOrchestrator {
       // call back into [executeTool]; progress events are streamed live while
       // the provider is still working.
       final live = StreamController<AgentEvent>();
-      Future<Map<String, Object?>> executeTool(ToolCallRequest call) async {
+      Future<ToolExecutionRecord> executeTool(ToolCallRequest call) async {
         if (live.isClosed || ++nativeCalls > maxToolRounds * 5) {
-          return const {'status': 'rejected', 'error': 'too_many_tool_calls'};
+          return ToolExecutionRecord(
+            request: call,
+            status: ToolExecutionStatus.rejected,
+            modelPayload: const {'status': 'rejected', 'error': 'too_many_tool_calls'},
+            duration: Duration.zero,
+            failure: const PermissionFailure(FailureCode.toolNotPermitted, 'too many tool calls'),
+          );
         }
         live.add(AgentToolStarted(call.name));
         final rec = await _registry.execute(call, ctx);
         records.add(rec);
         if (!live.isClosed) live.add(AgentToolFinished(rec));
-        return rec.modelPayload;
+        return rec;
       }
 
       final outcome = provider
@@ -186,10 +193,11 @@ final class AgentOrchestrator {
           turns
             ..add(ToolCallsTurn(calls.take(5).toList(), providerNative: providerNative))
             ..add(ToolResultsTurn(roundRecords));
-        case AiTextResponse(:final text, :final servedBy):
-          // Any language model (cloud or on-device) must be grounded in tool
-          // output; only the deterministic engine renders from typed data.
-          if ((servedBy ?? provider.kind) != AiProviderKind.localDeterministic) {
+        case AiTextResponse(:final text, :final servedBy, :final renderedFromTools):
+          // Any text written by a language model (cloud or on-device) must be
+          // grounded in tool output. Replies rendered by Sauti's templates
+          // from typed tool output are grounded by construction.
+          if (!renderedFromTools && (servedBy ?? provider.kind) != AiProviderKind.localDeterministic) {
             final bad = guard.ungroundedAmounts(text, userText: userText, records: records);
             if (bad.isNotEmpty) {
               throw AiProviderException(AiErrorKind.invalidResponse, 'ungrounded amounts: $bad');

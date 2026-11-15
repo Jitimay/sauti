@@ -1641,6 +1641,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Kirundi translations are a first draft under review by native speakers.'**
   String get kirundiDraftNote;
+
+  /// No description provided for @onDeviceAiSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Private on-device AI (Gemini Nano)'**
+  String get onDeviceAiSetting;
+
+  /// No description provided for @onDeviceAiReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready. Your requests are understood on this phone and work without internet.'**
+  String get onDeviceAiReady;
+
+  /// No description provided for @onDeviceAiDownloadable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available for this device. Download it once (Wi-Fi recommended) to keep your requests on the phone.'**
+  String get onDeviceAiDownloadable;
+
+  /// No description provided for @onDeviceAiDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading the on-device model…'**
+  String get onDeviceAiDownloading;
+
+  /// No description provided for @onDeviceAiUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not supported on this device. Sauti uses cloud AI or basic mode instead.'**
+  String get onDeviceAiUnavailable;
+
+  /// No description provided for @onDeviceAiDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get onDeviceAiDownload;
 }
 
 class _AppLocalizationsDelegate

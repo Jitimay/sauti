@@ -25,9 +25,25 @@ Verified by reading the source of `firebase_ai` **5.1.0**, the version installed
 
 | | Android (Gemini Nano) | Web (Chrome) | iOS (Apple FM) |
 |---|---|---|---|
+| Firebase AI Logic SDK | `firebase-ai` 18.2.0 + `firebase-ai-ondevice` 16.0.0-beta08 | Firebase JS SDK 13.1.0 (`firebase/ai`) | Firebase Apple SDK 13 (`FirebaseAILogic`) |
+| Mode | `InferenceMode.PREFER_ON_DEVICE` | `InferenceMode.PREFER_ON_DEVICE` | Apple session: on-device, then `geminiLanguageModel` |
 | On-device function calling | ❌ | ❌ | ✅ |
-| On-device structured output | ✅ | ✅ | ✅ |
-| Sauti status | planned | planned | built (Dart tested; Swift needs Xcode 27) |
+| How Sauti uses it | JSON intent → Sauti tools → templates (`HybridIntentProvider`) | same | native tool loop (`HybridAiProvider`) |
+| Which engine answered | `response.inferenceSource` | `response.inferenceSource` | which session returned |
+| Model download | Settings → *Download* (`FirebaseAIOnDevice.download()`) | Settings → *Download* (`initializeDeviceModel`, needs a tap) | managed by iOS |
+| Status | builds (APK) | builds | builds (simulator) |
+
+### Android and Web: the model labels, Sauti answers
+
+On-device models on Android and Chrome have no function calling and a small context, so Sauti asks them for one thing only: a JSON intent (`intent_schema.dart`), for example `{"intent":"transfer","amount":20000,"name":"Jean"}`. Then:
+
+1. The JSON is validated strictly. Unknown intents become `unknown`, and ranges are enforced.
+2. **A name must appear in what the user said**, so the model cannot invent a recipient.
+3. **When the user said an amount in digits, that amount wins**, so the model cannot change how much is sent.
+4. If the model says `unknown`, the keyword engine gets a chance, so this tier never does worse than basic mode.
+5. `IntentAgent` (shared with basic mode) runs the typed tools through the permissioned registry and renders the reply from typed output in English, French or Kirundi.
+
+The reply is therefore grounded by construction (`renderedFromTools`). On-device, neither the request nor any banking data leaves the phone. If the on-device call fails, the SDK falls back to cloud Gemini for the same JSON task (when the user allows cloud AI), and `inferenceSource` labels the reply.
 
 Default model: `gemini-3.8-flash`, a stable model in the Firebase AI Logic model list at the time of writing. Override it with `--dart-define=SAUTI_AI_MODEL=...`.
 
@@ -36,7 +52,9 @@ Default model: `gemini-3.8-flash`, a stable model in the Firebase AI Logic model
 ```
 AgentOrchestrator
   ├─ HybridAiProvider        (iOS: Apple on-device model → Gemini fallback;
-  │                           native tool loop via ToolExecutor)            — iOS only
+  │                           native tool loop via ToolExecutor)            — iOS
+  ├─ HybridIntentProvider    (Android/Chrome: Gemini Nano labels a JSON intent,
+  │                           Sauti tools + templates answer)               — when Nano is ready
   ├─ GeminiAiProvider        (cloud LLM, function calling)   — needs Firebase + network + user consent
   └─ LocalIntentProvider     ("Basic mode": deterministic, offline) — always available, never throws
 ```
@@ -51,9 +69,6 @@ Each reply records which engine produced it (`servedBy`) and the UI labels it: *
 
 `LocalIntentProvider` ("Basic mode" in the UI) is a keyword and slot parser for EN, FR and Kirundi: amounts, recipient names, counts, categories, "ejo hashize", "last month". It drives **the same typed tools** as the language models and renders replies from localized templates (`agent_phrasebook.dart`) using typed tool output. It is predictable and testable, but it is not an LLM. It answers "I didn't understand" rather than guessing. It exists for the phones most Sauti users have: no on-device model and often no signal.
 
-### Next on-device platforms
-
-Android (Gemini Nano through the Firebase AI Logic Android SDK) and Web (Chrome built-in AI through the Firebase JS SDK) go in the same plugin. Neither supports on-device function calling, so there the on-device model will use structured output (intent and slots as JSON) and Sauti's tools will run deterministically.
 
 ## Tool system
 

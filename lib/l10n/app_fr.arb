@@ -256,5 +256,11 @@
   "navAssistant": "Assistant",
   "navActivity": "Activité",
   "navSettings": "Réglages",
-  "kirundiDraftNote": "Les traductions en kirundi sont un premier jet en cours de relecture."
+  "kirundiDraftNote": "Les traductions en kirundi sont un premier jet en cours de relecture.",
+  "onDeviceAiSetting": "IA privée sur l'appareil (Gemini Nano)",
+  "onDeviceAiReady": "Prête. Vos demandes sont comprises sur ce téléphone et fonctionnent sans internet.",
+  "onDeviceAiDownloadable": "Disponible pour cet appareil. Téléchargez-la une fois (Wi-Fi conseillé) pour garder vos demandes sur le téléphone.",
+  "onDeviceAiDownloading": "Téléchargement du modèle sur l'appareil…",
+  "onDeviceAiUnavailable": "Non prise en charge sur cet appareil. Sauti utilise l'IA cloud ou le mode de base.",
+  "onDeviceAiDownload": "Télécharger"
 }

@@ -20,14 +20,17 @@ import 'simulated_bank_repository.dart';
 final class CachingBankRepository implements BankRepository {
   CachingBankRepository(this._remote, this._store);
 
+  /// Upper bound on transactions kept in the encrypted offline snapshot.
+  static const maxCachedTransactions = 200;
+
   final BankRepository _remote;
   final BankSnapshotStore _store;
 
   /// Test/demo introspection: debits actually applied by the simulated bank.
   int get debugRemoteAppliedTransfers => switch (_remote) {
-        final SimulatedBankRepository sim => sim.appliedTransfers,
-        _ => -1,
-      };
+    final SimulatedBankRepository sim => sim.appliedTransfers,
+    _ => -1,
+  };
 
   Future<Result<Fresh<T>>> _fallback<T>(
     Failure f,
@@ -58,9 +61,15 @@ final class CachingBankRepository implements BankRepository {
     final r = await _remote.getTransactions(query);
     switch (r) {
       case Ok(:final value):
-        final isUnfiltered = query == TransactionQuery(limit: query.limit) || query.limit >= 50;
-        if (isUnfiltered && query.text == null) {
-          await _store.save(transactions: value.data, at: value.asOf);
+        // Only an unfiltered "newest N" page is a faithful slice of history.
+        // Merge it into the snapshot instead of replacing it, so a short page
+        // (the dashboard shows 4) never shrinks what is available offline.
+        if (query == TransactionQuery(limit: query.limit)) {
+          final cached = (await _store.read())?.transactions ?? const <BankTransaction>[];
+          final fresh = {for (final t in value.data) t.id};
+          final merged = [...value.data, ...cached.where((t) => !fresh.contains(t.id))]
+            ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+          await _store.save(transactions: merged.take(maxCachedTransactions).toList(), at: value.asOf);
         }
         return r;
       case Err(:final failure):

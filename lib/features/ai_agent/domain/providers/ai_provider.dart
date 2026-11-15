@@ -64,9 +64,10 @@ final class ToolResultsTurn extends AiTurn {
   final List<ToolExecutionRecord> records;
 }
 
-/// Runs one tool call through the permissioned registry and returns the
-/// data-minimised payload for the model. Supplied by the orchestrator.
-typedef ToolExecutor = Future<Map<String, Object?>> Function(ToolCallRequest call);
+/// Runs one tool call through the permissioned registry and returns its audit
+/// record: `modelPayload` (data-minimised, safe for a model) plus the typed
+/// `output` for local rendering. Supplied by the orchestrator.
+typedef ToolExecutor = Future<ToolExecutionRecord> Function(ToolCallRequest call);
 
 final class AiRequest {
   const AiRequest({required this.language, required this.turns, required this.tools, this.executeTool});
@@ -86,12 +87,17 @@ sealed class AiResponse {
 }
 
 final class AiTextResponse extends AiResponse {
-  const AiTextResponse(this.text, {this.servedBy});
+  const AiTextResponse(this.text, {this.servedBy, this.renderedFromTools = false});
   final String text;
 
   /// Which inference path actually produced this text, when a provider can
   /// use more than one (e.g. on-device first, cloud fallback).
   final AiProviderKind? servedBy;
+
+  /// True when the reply was rendered by Sauti's templates from typed tool
+  /// output (the model only chose the intent), so every figure is grounded
+  /// by construction.
+  final bool renderedFromTools;
 }
 
 final class AiToolCallResponse extends AiResponse {

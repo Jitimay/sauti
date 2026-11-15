@@ -31,6 +31,7 @@ final class AppConfig {
     required this.aiModel,
     this.firebase,
     this.appCheckDebug = false,
+    this.appCheckDebugToken = '',
     this.functionsRegion = 'europe-west1',
   });
 
@@ -45,6 +46,7 @@ final class AppConfig {
     const authDomain = String.fromEnvironment('FIREBASE_AUTH_DOMAIN');
     const model = String.fromEnvironment('SAUTI_AI_MODEL', defaultValue: 'gemini-3.8-flash');
     const appCheckDebug = bool.fromEnvironment('SAUTI_APP_CHECK_DEBUG');
+    const appCheckDebugToken = String.fromEnvironment('SAUTI_APP_CHECK_DEBUG_TOKEN');
     const region = String.fromEnvironment('SAUTI_FUNCTIONS_REGION', defaultValue: 'europe-west1');
 
     final hasFirebase = apiKey.isNotEmpty && appId.isNotEmpty && sender.isNotEmpty && project.isNotEmpty;
@@ -52,6 +54,7 @@ final class AppConfig {
       environment: env == 'live' ? AppEnvironment.live : AppEnvironment.demo,
       aiModel: model,
       appCheckDebug: appCheckDebug,
+      appCheckDebugToken: appCheckDebugToken,
       functionsRegion: region,
       firebase: hasFirebase
           ? FirebaseClientConfig(
@@ -71,6 +74,12 @@ final class AppConfig {
   final String aiModel;
   final FirebaseClientConfig? firebase;
   final bool appCheckDebug;
+
+  /// A debug token registered in the Firebase console (App Check → Manage
+  /// debug tokens). Only for judging/test builds handed to people whose
+  /// devices cannot be registered one by one; revoke it in the console
+  /// afterwards. Never set it for a production release.
+  final String appCheckDebugToken;
 
   /// Must match the region in firebase/functions/src/index.ts.
   final String functionsRegion;

@@ -109,4 +109,37 @@ void main() {
       throwsA(isA<HybridAiException>().having((e) => e.code, 'code', 'contextTooLarge')),
     );
   });
+
+  test('generateJson parses the native reply, even wrapped in prose', () async {
+    final client = SautiHybridAi();
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      expect(call.method, 'generateJson');
+      final a = call.arguments as Map;
+      expect(a['allowOnDevice'], isTrue);
+      expect(jsonDecode(a['schema'] as String), containsPair('type', 'object'));
+      return {'text': 'Sure: ```json\n{"intent":"balance"}\n```', 'servedBy': 'onDevice'};
+    });
+    final r = await client.generateJson(
+      instructions: 'i',
+      prompt: 'p',
+      schema: const {'type': 'object'},
+      allowOnDevice: true,
+      allowCloud: true,
+      cloudModel: 'm',
+    );
+    expect(r.json, {'intent': 'balance'});
+    expect(r.source, HybridSource.onDevice);
+    expect(() => HybridJsonResult.parseObject('no json here'), throwsA(isA<HybridAiException>()));
+  });
+
+  test('status reports the download state; prepareOnDevice returns the new state', () async {
+    final client = SautiHybridAi();
+    messenger.setMockMethodCallHandler(channel, (call) async => switch (call.method) {
+          'status' => {'onDevice': false, 'onDeviceState': 'downloadable', 'cloud': true},
+          'prepareOnDevice' => 'available',
+          _ => null,
+        });
+    expect((await client.status(languageCode: 'en')).onDeviceState, OnDeviceState.downloadable);
+    expect(await client.prepareOnDevice(), OnDeviceState.available);
+  });
 }

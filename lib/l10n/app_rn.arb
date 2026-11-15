@@ -256,5 +256,11 @@
   "navAssistant": "Umufasha",
   "navActivity": "Ivyakozwe",
   "navSettings": "Ingene bigenda",
-  "kirundiDraftNote": "Ubusobanuro mu Kirundi ni ubwa mbere, buriko burasuzumwa."
+  "kirundiDraftNote": "Ubusobanuro mu Kirundi ni ubwa mbere, buriko burasuzumwa.",
+  "onDeviceAiSetting": "AI yihishije kuri telefone (Gemini Nano)",
+  "onDeviceAiReady": "Iriteguye. Ivyo usaba vyumvikanira kuri iyi telefone, kandi bikora ata interineti.",
+  "onDeviceAiDownloadable": "Irashobora gukora kuri iyi telefone. Yimanure rimwe (biruta kuri Wi-Fi) kugira ngo ivyo usaba bigume kuri telefone.",
+  "onDeviceAiDownloading": "Turiko turimanura AI ya telefone…",
+  "onDeviceAiUnavailable": "Ntikora kuri iyi telefone. Sauti ikoresha AI yo kuri interineti canke uburyo bworoshe.",
+  "onDeviceAiDownload": "Kumanura"
 }

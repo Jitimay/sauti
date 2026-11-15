@@ -1,15 +1,49 @@
-/// Native hybrid inference bridge.
+/// Hybrid inference bridge for Sauti (Firebase AI Logic).
 ///
-/// iOS: Apple Foundation Models (`SystemLanguageModel`, on-device) first, then
-/// Gemini through Firebase AI Logic (`GeminiLanguageModel`) as cloud fallback.
-/// Both run inside Apple's `LanguageModelSession`, which drives the tool loop
-/// itself and calls back into Dart for every tool ([HybridToolHandler]).
+/// * **iOS:** Apple Foundation Models (`SystemLanguageModel`, on-device) first,
+///   then Gemini through Firebase AI Logic (`GeminiLanguageModel`) as cloud
+///   fallback. Both run inside Apple's `LanguageModelSession`, which drives the
+///   tool loop itself and calls back into Dart for every tool
+///   ([HybridAiClient.respond]).
+/// * **Android:** Gemini Nano through the Firebase AI Logic hybrid SDK
+///   (`InferenceMode.PREFER_ON_DEVICE`), cloud Gemini as fallback.
+/// * **Web (Chrome):** Chrome's built-in Gemini Nano through the Firebase AI
+///   Logic JS SDK hybrid mode, cloud Gemini as fallback.
+///
+/// Android and Web on-device models have no function calling, so they are
+/// used through [HybridAiClient.generateJson]: the model returns a small JSON
+/// intent and Sauti runs its own typed tools.
 library;
 
 import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
+
+import 'src/client_factory_stub.dart' if (dart.library.js_interop) 'src/client_factory_web.dart' as platform_client;
+
+/// The hybrid client for the current platform: the method-channel bridge on
+/// iOS and Android, the Firebase JS SDK bridge on the web. Returns null where
+/// no hybrid path exists (desktop, tests).
+HybridAiClient? createHybridAiClient() => platform_client.createPlatformClient();
+
+/// Lifecycle of the on-device model on this device.
+enum OnDeviceState {
+  /// Ready to run now.
+  available,
+
+  /// Supported, but the model must be downloaded first ([HybridAiClient.prepareOnDevice]).
+  downloadable,
+
+  /// A download is in progress.
+  downloading,
+
+  /// Not supported on this device, OS or browser.
+  unavailable;
+
+  static OnDeviceState parse(Object? v) =>
+      OnDeviceState.values.where((s) => s.name == v).firstOrNull ?? OnDeviceState.unavailable;
+}
 
 /// Which engine produced a reply.
 enum HybridSource { onDevice, cloud }
@@ -21,13 +55,17 @@ final class HybridStatus {
     required this.onDeviceReason,
     required this.onDeviceSupportsLanguage,
     required this.cloudAvailable,
-  });
+    OnDeviceState? onDeviceState,
+    this.nativeToolLoop = false,
+  }) : _state = onDeviceState;
 
   factory HybridStatus.fromMap(Map<Object?, Object?> m) => HybridStatus(
         onDeviceAvailable: m['onDevice'] == true,
         onDeviceReason: (m['onDeviceReason'] as String?) ?? 'unknown',
         onDeviceSupportsLanguage: m['onDeviceSupportsLanguage'] == true,
         cloudAvailable: m['cloud'] == true,
+        onDeviceState: m['onDeviceState'] == null ? null : OnDeviceState.parse(m['onDeviceState']),
+        nativeToolLoop: m['nativeToolLoop'] == true,
       );
 
   static const unsupported = HybridStatus(
@@ -36,6 +74,17 @@ final class HybridStatus {
     onDeviceSupportsLanguage: false,
     cloudAvailable: false,
   );
+
+  final OnDeviceState? _state;
+
+  /// Model lifecycle (download state). Derived from [onDeviceAvailable] when
+  /// the platform does not report it.
+  OnDeviceState get onDeviceState =>
+      _state ?? (onDeviceAvailable ? OnDeviceState.available : OnDeviceState.unavailable);
+
+  /// True when the platform's session drives a tool loop itself (Apple
+  /// Foundation Models). Otherwise use [HybridAiClient.generateJson].
+  final bool nativeToolLoop;
 
   /// Apple Intelligence model is ready on this device.
   final bool onDeviceAvailable;
@@ -103,6 +152,29 @@ final class HybridResult {
   final HybridSource source;
 }
 
+/// A JSON object produced by [HybridAiClient.generateJson], with the engine
+/// that produced it.
+final class HybridJsonResult {
+  const HybridJsonResult({required this.json, required this.source});
+  final Map<String, Object?> json;
+  final HybridSource source;
+
+  /// Extracts the first JSON object from model text (models sometimes wrap it
+  /// in prose or code fences). Throws [HybridAiException] if there is none.
+  static Map<String, Object?> parseObject(String text) {
+    final start = text.indexOf('{');
+    final end = text.lastIndexOf('}');
+    if (start < 0 || end <= start) throw const HybridAiException('invalidResponse', 'no JSON object');
+    try {
+      final v = jsonDecode(text.substring(start, end + 1));
+      if (v is Map) return v.cast<String, Object?>();
+    } on FormatException {
+      // fall through
+    }
+    throw const HybridAiException('invalidResponse', 'malformed JSON');
+  }
+}
+
 /// Error from the native side. [code] is one of `unavailable`,
 /// `contextTooLarge`, `blocked`, `unsupportedLanguage`, `quota`, `network`,
 /// `toolLoop`, `unknown`.
@@ -132,6 +204,22 @@ abstract interface class HybridAiClient {
     required String cloudModel,
     required HybridToolHandler onToolCall,
   });
+
+  /// Single-turn structured generation: returns a JSON object that follows
+  /// [schema] (an OpenAPI-style JSON schema). On-device first when
+  /// [allowOnDevice], cloud fallback when [allowCloud].
+  Future<HybridJsonResult> generateJson({
+    required String instructions,
+    required String prompt,
+    required Map<String, Object?> schema,
+    required bool allowOnDevice,
+    required bool allowCloud,
+    required String cloudModel,
+  });
+
+  /// Starts (and waits for) the on-device model download where the platform
+  /// requires one. Must be called from a user action on the web.
+  Future<OnDeviceState> prepareOnDevice();
 }
 
 /// Method-channel client. One instance per app.
@@ -191,6 +279,48 @@ final class SautiHybridAi implements HybridAiClient {
       throw const HybridAiException('unavailable', 'plugin not registered');
     } finally {
       _handlers.remove(id);
+    }
+  }
+
+  @override
+  Future<HybridJsonResult> generateJson({
+    required String instructions,
+    required String prompt,
+    required Map<String, Object?> schema,
+    required bool allowOnDevice,
+    required bool allowCloud,
+    required String cloudModel,
+  }) async {
+    try {
+      final m = await _channel.invokeMapMethod<Object?, Object?>('generateJson', {
+        'instructions': instructions,
+        'prompt': prompt,
+        'schema': jsonEncode(schema),
+        'allowOnDevice': allowOnDevice,
+        'allowCloud': allowCloud,
+        'cloudModel': cloudModel,
+      });
+      final text = m?['text'];
+      if (text is! String) throw const HybridAiException('invalidResponse', 'empty response');
+      return HybridJsonResult(
+        json: HybridJsonResult.parseObject(text),
+        source: m?['servedBy'] == 'cloud' ? HybridSource.cloud : HybridSource.onDevice,
+      );
+    } on PlatformException catch (e) {
+      throw HybridAiException(e.code, e.message);
+    } on MissingPluginException {
+      throw const HybridAiException('unavailable', 'plugin not registered');
+    }
+  }
+
+  @override
+  Future<OnDeviceState> prepareOnDevice() async {
+    try {
+      return OnDeviceState.parse(await _channel.invokeMethod<String>('prepareOnDevice'));
+    } on MissingPluginException {
+      return OnDeviceState.unavailable;
+    } on PlatformException {
+      return OnDeviceState.unavailable;
     }
   }
 

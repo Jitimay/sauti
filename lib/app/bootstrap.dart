@@ -41,11 +41,17 @@ Future<bool> _initFirebase(AppConfig config) async {
     );
     // App Check: attests that requests (Firestore, Functions, AI Logic) come
     // from this genuine app. Debug providers only in debug builds when asked.
-    final debug = kDebugMode && config.appCheckDebug;
+    // A registered debug token (judging builds) works in any build mode.
+    final token = config.appCheckDebugToken.isEmpty ? null : config.appCheckDebugToken;
+    final debug = token != null || (kDebugMode && config.appCheckDebug);
     await FirebaseAppCheck.instance.activate(
-      providerAndroid: debug ? const AndroidDebugProvider() : const AndroidPlayIntegrityProvider(),
-      providerApple: debug ? const AppleDebugProvider() : const AppleAppAttestProvider(),
-      providerWeb: kIsWeb ? ReCaptchaV3Provider(const String.fromEnvironment('RECAPTCHA_SITE_KEY')) : null,
+      providerAndroid: debug ? AndroidDebugProvider(debugToken: token) : const AndroidPlayIntegrityProvider(),
+      providerApple: debug ? AppleDebugProvider(debugToken: token) : const AppleAppAttestProvider(),
+      providerWeb: !kIsWeb
+          ? null
+          : debug
+              ? WebDebugProvider(debugToken: token)
+              : ReCaptchaV3Provider(const String.fromEnvironment('RECAPTCHA_SITE_KEY')),
     );
     return true;
   } catch (e) {

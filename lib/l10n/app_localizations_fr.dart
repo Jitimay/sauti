@@ -870,4 +870,26 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get kirundiDraftNote =>
       'Les traductions en kirundi sont un premier jet en cours de relecture.';
+
+  @override
+  String get onDeviceAiSetting => 'IA privée sur l\'appareil (Gemini Nano)';
+
+  @override
+  String get onDeviceAiReady =>
+      'Prête. Vos demandes sont comprises sur ce téléphone et fonctionnent sans internet.';
+
+  @override
+  String get onDeviceAiDownloadable =>
+      'Disponible pour cet appareil. Téléchargez-la une fois (Wi-Fi conseillé) pour garder vos demandes sur le téléphone.';
+
+  @override
+  String get onDeviceAiDownloading =>
+      'Téléchargement du modèle sur l\'appareil…';
+
+  @override
+  String get onDeviceAiUnavailable =>
+      'Non prise en charge sur cet appareil. Sauti utilise l\'IA cloud ou le mode de base.';
+
+  @override
+  String get onDeviceAiDownload => 'Télécharger';
 }
