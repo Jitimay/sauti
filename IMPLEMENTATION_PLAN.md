@@ -99,6 +99,7 @@ Not used (deliberately): dio (no non-Firebase HTTP backend yet), hive/isar (snap
 - [x] Phase 6: transfer state machine, device/password authentication, idempotent submission, verified receipts, insights, explanations, with tests
 - [x] Phase 7: Firestore rules and indexes, Cloud Functions (submitTransfer, provisionSandboxAccount), App Check wiring, offline cache, rules tests (written; emulator not runnable here)
 - [x] Phase 8: full analyze/test, integration scenarios (host + Android emulator), docs, demo guide
+- [x] Phase 9: UI redesign (Atkinson font, navy/amber palette, full type scale, all screens), natural cloud voice (Gemini TTS verified live), voice-pick algorithm, App Check + reCAPTCHA Enterprise verified live, deploy to Firebase Hosting
 
 ### Deviations from the original prompt (and why)
 

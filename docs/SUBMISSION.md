@@ -62,10 +62,11 @@ Other Firebase products used:
 
 * One agent and one tool registry across three on-device engines, the cloud and an offline mode.
 * Transfers are designed so that no model output can move money.
-* 166 app tests plus 6 plugin tests, an architecture test that keeps the domain layer pure, and accessibility guideline tests.
+* 180 app tests plus 6 plugin tests, an architecture test that keeps the domain layer pure, and accessibility guideline tests (contrast, touch targets, 200% scaling).
 
 ### What we learned / What's next
 
+* **Verified:** reCAPTCHA Enterprise App Check, cloud Gemini text (~6–7 s) and Gemini TTS natural voice (~4 s) all work live in Chrome. The on-device Chrome path (Gemini Nano Prompt API) is the next demo target.
 * Native-speaker review of the Kirundi phrases, and a Kirundi speech-recognition partner.
 * Field tests with blind users and elderly users in Bujumbura.
 * A licensed bank integration behind the existing `BankRepository` seam (regulator: BRB).
@@ -123,13 +124,13 @@ Things to try:
 
 ## 5. Pre-submission checklist
 
-- [ ] Repo public, **Apache-2.0 LICENSE visible in the About section** (GitHub detects `LICENSE`).
-- [ ] Firebase project: AI Logic (Gemini Developer API) enabled, App Check registered (Android, iOS, Web), Firestore rules and functions deployed (`docs/FIREBASE_SETUP.md`).
-- [ ] App Check debug token created in the console for judging builds, and **revoked after judging**.
-- [ ] Judging APK: `flutter build apk --release --dart-define-from-file=config/env.json` (with `FIREBASE_*` and `SAUTI_APP_CHECK_DEBUG_TOKEN`).
-- [x] Web hosted at https://sauti-hybrid-ai.web.app: `flutter build web --release --dart-define-from-file=config/env.web.json -o firebase/public && (cd firebase && firebase deploy --only hosting)`.
-- [ ] ⚠ verify on a Gemini Nano Android phone: Download → airplane mode → *On-device AI · private*.
-- [ ] ⚠ verify in Chrome with the Prompt API flag.
-- [ ] ⚠ verify on iOS (Apple Intelligence device) if you claim the iOS path; otherwise present iOS as "builds, not demonstrated".
-- [ ] Video uploaded, public, ≤ 3:00, English.
-- [ ] Devpost: platforms selected (Android + Web, plus iOS only if verified), repo URL, video URL, testing instructions, AI-tools disclosure.
+- [ ] Repo public on GitHub (`github.com/Jitimay/sauti`), **Apache-2.0 LICENSE visible in the About section**.
+- [x] Firebase project `sauti-hybrid-ai` live: AI Logic (Google AI), App Check (reCAPTCHA Enterprise on web), Hosting deployed.
+- [x] reCAPTCHA Enterprise → App Check exchange **verified live** in Chrome.
+- [x] Cloud AI (Gemini text, 6–7 s) **verified live** — *Cloud AI* badge shown.
+- [x] Natural voice (Gemini TTS ~4 s, WAV playback) **verified live** on Mac Chrome.
+- [ ] On-device demo in Chrome: open `chrome://flags/#prompt-api-for-gemini-nano-multimodal-input`, Settings → *Private on-device AI* → **Download**, ask a question, confirm *On-device AI · private* badge appears.
+- [ ] Record ≤ 3-minute demo video in Chrome (see script in §4). Upload to YouTube (public), paste URL in Devpost.
+- [ ] Optional: Android judging APK — register Android app in Firebase, create `config/env.android.json`, build with `--dart-define-from-file=config/env.android.json`, test on a Gemini Nano–eligible phone.
+- [ ] Submit on Devpost: select Web/Chrome platform (+ Android if APK ready), paste repo URL, video URL, testing instructions. Disclose AI coding assistant used.
+- [ ] After judging: revoke App Check debug token in Firebase console.
