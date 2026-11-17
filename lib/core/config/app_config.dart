@@ -32,6 +32,10 @@ final class AppConfig {
     this.firebase,
     this.appCheckDebug = false,
     this.appCheckDebugToken = '',
+    this.ttsModel = 'gemini-3.8-flash-lite-tts',
+    this.ttsVoice = 'Kore',
+    this.recaptchaSiteKey = '',
+    this.recaptchaEnterpriseKey = '',
     this.functionsRegion = 'europe-west1',
   });
 
@@ -47,7 +51,11 @@ final class AppConfig {
     const model = String.fromEnvironment('SAUTI_AI_MODEL', defaultValue: 'gemini-3.8-flash');
     const appCheckDebug = bool.fromEnvironment('SAUTI_APP_CHECK_DEBUG');
     const appCheckDebugToken = String.fromEnvironment('SAUTI_APP_CHECK_DEBUG_TOKEN');
+    const ttsModel = String.fromEnvironment('SAUTI_TTS_MODEL', defaultValue: 'gemini-3.8-flash-lite-tts');
+    const ttsVoice = String.fromEnvironment('SAUTI_TTS_VOICE', defaultValue: 'Kore');
     const region = String.fromEnvironment('SAUTI_FUNCTIONS_REGION', defaultValue: 'europe-west1');
+    const recaptcha = String.fromEnvironment('RECAPTCHA_SITE_KEY');
+    const recaptchaEnterprise = String.fromEnvironment('RECAPTCHA_ENTERPRISE_KEY');
 
     final hasFirebase = apiKey.isNotEmpty && appId.isNotEmpty && sender.isNotEmpty && project.isNotEmpty;
     return AppConfig(
@@ -55,6 +63,10 @@ final class AppConfig {
       aiModel: model,
       appCheckDebug: appCheckDebug,
       appCheckDebugToken: appCheckDebugToken,
+      ttsModel: ttsModel,
+      ttsVoice: ttsVoice,
+      recaptchaSiteKey: recaptcha,
+      recaptchaEnterpriseKey: recaptchaEnterprise,
       functionsRegion: region,
       firebase: hasFirebase
           ? FirebaseClientConfig(
@@ -80,6 +92,23 @@ final class AppConfig {
   /// devices cannot be registered one by one; revoke it in the console
   /// afterwards. Never set it for a production release.
   final String appCheckDebugToken;
+
+  /// reCAPTCHA v3 (classic) site key for App Check on the web (public).
+  final String recaptchaSiteKey;
+
+  /// reCAPTCHA Enterprise / Fraud Defense key ID for App Check on the web
+  /// (public). Preferred: classic v3 is deprecated for new App Check setups.
+  final String recaptchaEnterpriseKey;
+
+  /// Whether the web build can obtain App Check tokens. Without one, Firebase
+  /// AI Logic (App Check enforced) rejects every request, so the web build
+  /// must not wait on the cloud at all.
+  bool get webAppCheckReady =>
+      recaptchaEnterpriseKey.isNotEmpty || recaptchaSiteKey.isNotEmpty || appCheckDebugToken.isNotEmpty || appCheckDebug;
+
+  /// Gemini TTS model and prebuilt voice for natural speech.
+  final String ttsModel;
+  final String ttsVoice;
 
   /// Must match the region in firebase/functions/src/index.ts.
   final String functionsRegion;

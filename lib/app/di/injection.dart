@@ -45,6 +45,7 @@ import '../../features/transfers/domain/repositories/transfer_authenticator.dart
 import '../../features/transfers/domain/usecases/prepare_transfer.dart';
 import '../../features/transfers/domain/usecases/submit_transfer.dart';
 import '../../features/voice/data/platform_speech_recognizer.dart';
+import '../../features/voice/data/natural_speech_synthesizer.dart';
 import '../../features/voice/data/platform_speech_synthesizer.dart';
 import '../../features/voice/domain/speech_recognizer.dart';
 import '../../features/voice/domain/speech_synthesizer.dart';
@@ -153,6 +154,8 @@ Future<void> configureDependencies({
   // Android and in Chrome (needs Firebase).
   final isApple = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
   final hybridClient = o.hybridAi ?? (isApple || firebaseReady ? createHybridAiClient() : null);
+  // Cloud Gemini (text and voice) needs Firebase AND, on the web, App Check.
+  final cloudReady = firebaseReady && (!kIsWeb || config.webAppCheckReady);
   if (hybridClient != null) sl.registerSingleton<HybridAiClient>(hybridClient);
   final nativeToolLoop = o.hybridToolLoop ?? isApple;
   sl
@@ -172,7 +175,7 @@ Future<void> configureDependencies({
     ..registerLazySingleton<ConversationRepository>(() => o.conversations ?? SecureConversationRepository(sl()))
     ..registerLazySingleton(() {
       Future<bool> cloudAllowed() async =>
-          firebaseReady &&
+          cloudReady &&
           sl<SettingsRepository>().loadPreferences().cloudAiEnabled &&
           await sl<NetworkStatus>().isOnline();
       final providers = <AiProvider>[
@@ -188,7 +191,7 @@ Future<void> configureDependencies({
             now: clock.now,
             cloudModel: config.aiModel,
           ),
-        if (firebaseReady)
+        if (cloudReady)
           GeminiAiProvider.firebase(
             model: config.aiModel,
             now: clock.now,
@@ -209,7 +212,21 @@ Future<void> configureDependencies({
   // ---- Voice ----
   sl
     ..registerLazySingleton<SpeechRecognizer>(() => o.recognizer ?? PlatformSpeechRecognizer())
-    ..registerLazySingleton<SpeechSynthesizer>(() => o.synthesizer ?? PlatformSpeechSynthesizer())
+    ..registerLazySingleton<SpeechSynthesizer>(() {
+      if (o.synthesizer != null) return o.synthesizer!;
+      final device = PlatformSpeechSynthesizer();
+      if (!cloudReady) return device;
+      // Natural voice (Gemini TTS via Firebase AI Logic), device voice fallback.
+      return NaturalSpeechSynthesizer.firebase(
+        fallback: device,
+        model: config.ttsModel,
+        voice: config.ttsVoice,
+        allowed: () async {
+          final p = sl<SettingsRepository>().loadPreferences();
+          return p.cloudAiEnabled && p.naturalVoiceEnabled && await sl<NetworkStatus>().isOnline();
+        },
+      );
+    })
     ..registerSingleton<String Function()>(newId, instanceName: 'newId');
 }
 

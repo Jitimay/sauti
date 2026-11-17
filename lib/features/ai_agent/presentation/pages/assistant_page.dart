@@ -78,11 +78,19 @@ class _AssistantPageState extends State<AssistantPage> {
         ),
         // New assistant reply → speak (if enabled or the request was spoken).
         BlocListener<AgentBloc, AgentState>(
-          listenWhen: (a, b) => b.messages.length > a.messages.length && b.messages.last.role == ChatRole.assistant,
+          // Only a reply generated just now (exactly one new message after the
+          // user's turn). Restoring saved history must never be read aloud.
+          listenWhen: (a, b) =>
+              b.messages.length == a.messages.length + 1 &&
+              b.messages.last.role == ChatRole.assistant &&
+              a.messages.isNotEmpty &&
+              a.messages.last.role == ChatRole.user,
           listener: (context, s) {
             final a11y = context.read<AccessibilityBloc>().state;
             if (a11y.voiceFeedback || s.lastReplyViaVoice) {
-              context.read<VoiceBloc>().add(SpeechPlaybackStarted(s.messages.last.text, language: _lang, rate: a11y.speechRate));
+              final last = s.messages.last;
+              context.read<VoiceBloc>().add(SpeechPlaybackStarted(last.text,
+                  language: _lang, rate: a11y.speechRate, private: last.provider == AiProviderKind.onDeviceLlm));
             }
           },
         ),
@@ -153,43 +161,34 @@ class _StatusStrip extends StatelessWidget {
       _ => (Icons.graphic_eq_rounded, l.stateIdle),
     };
     final provider = agent.provider;
-    return Container(
-      width: double.infinity,
-      color: Theme.of(context).colorScheme.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: Row(children: [
-        Icon(icon, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(width: 10),
-        Expanded(flex: 3, child: Semantics(liveRegion: true, child: Text(text, style: Theme.of(context).textTheme.titleMedium))),
-        if (provider != null) ...[
-          const SizedBox(width: 8),
-          Flexible(
+    final busy = agent.busy || voice.status == VoiceStatus.listening;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(8, 8, 10, 8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(Radii.lg),
+          border: Border.all(color: st.line, width: st.isHighContrast ? 2 : 1),
+        ),
+        child: Row(children: [
+          IconBubble(icon, size: 40, background: busy ? st.accentSoft : null,
+              color: busy && !st.isHighContrast ? AppColors.amberDeep : null),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 3,
             child: Semantics(
-              label: providerLabel(l, provider),
-              excludeSemantics: true,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Theme.of(context).colorScheme.outline),
-                ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(providerIcon(provider), size: 16),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      providerLabel(l, provider),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(color: st.muted),
-                    ),
-                  ),
-                ]),
-              ),
+              liveRegion: true,
+              child: Text(text, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
             ),
           ),
-        ],
-      ]),
+          if (provider != null) ...[
+            const SizedBox(width: 8),
+            Flexible(flex: 2, child: ProviderBadge(provider)),
+          ],
+        ]),
+      ),
     );
   }
 }
@@ -203,21 +202,27 @@ class _Messages extends StatelessWidget {
     final l = context.l10n;
     final messages = context.select<AgentBloc, List<ChatMessage>>((b) => b.state.messages);
     if (messages.isEmpty) {
+      final suggestions = [
+        (Icons.account_balance_wallet_rounded, l.suggestionBalance),
+        (Icons.receipt_long_rounded, l.suggestionExplain),
+        (Icons.north_east_rounded, l.suggestionSend),
+        (Icons.pie_chart_rounded, l.suggestionSpending),
+        (Icons.notifications_none_rounded, l.suggestionNotifications),
+      ];
       return ResponsiveBody(
-        child: ListView(children: [
-          const SizedBox(height: 24),
-          const Center(child: SautiMark(size: 72)),
-          const SizedBox(height: 16),
-          Semantics(header: true, child: Text(l.tryAsking, textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge)),
-          const SizedBox(height: 16),
-          for (final s in [l.suggestionBalance, l.suggestionExplain, l.suggestionSend, l.suggestionSpending, l.suggestionNotifications])
+        child: ListView(padding: const EdgeInsets.only(bottom: 16), children: [
+          const SizedBox(height: 12),
+          const Center(child: SautiMark(size: 64)),
+          const SizedBox(height: 14),
+          Semantics(
+            header: true,
+            child: Text(l.tryAsking, textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall),
+          ),
+          const SizedBox(height: 18),
+          for (final (icon, s) in suggestions)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: OutlinedButton(
-                style: OutlinedButton.styleFrom(alignment: Alignment.centerLeft),
-                onPressed: () => onSuggestion(s),
-                child: Text('“$s”'),
-              ),
+              child: _Suggestion(icon: icon, text: s, onTap: () => onSuggestion(s)),
             ),
         ]),
       );
@@ -252,7 +257,7 @@ class _UserBubble extends StatelessWidget {
       child: Align(
         alignment: Alignment.centerRight,
         child: Container(
-          margin: const EdgeInsets.only(left: 48, bottom: 12),
+          margin: const EdgeInsets.only(left: 56, bottom: 14),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: scheme.primary,
@@ -279,17 +284,38 @@ class _AssistantMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final st = StatusColors.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16, right: 8),
+      padding: const EdgeInsets.only(bottom: 18, right: 8),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Padding(padding: EdgeInsets.only(top: 2), child: SautiMark(size: 28)),
+          Container(
+            width: 34,
+            height: 34,
+            margin: const EdgeInsets.only(top: 2),
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(color: scheme.surface, shape: BoxShape.circle, border: Border.all(color: st.line)),
+            child: const SautiMark(size: 26),
+          ),
           const SizedBox(width: 10),
-          Expanded(
-            child: Semantics(
-              label: 'Sauti: ${message.text}',
-              excludeSemantics: true,
-              child: Text(message.text, style: Theme.of(context).textTheme.bodyLarge),
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: scheme.surface,
+                border: Border.all(color: st.line, width: st.isHighContrast ? 2 : 1),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(6),
+                  topRight: Radius.circular(20),
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
+                ),
+              ),
+              child: Semantics(
+                label: 'Sauti: ${message.text}',
+                excludeSemantics: true,
+                child: Text(message.text, style: Theme.of(context).textTheme.bodyLarge),
+              ),
             ),
           ),
         ]),
@@ -297,18 +323,17 @@ class _AssistantMessage extends StatelessWidget {
           const SizedBox(height: 10),
           for (final c in message.cards)
             Padding(
-              padding: const EdgeInsets.only(left: 38, bottom: 8),
+              padding: const EdgeInsets.only(left: 44, bottom: 8),
               child: AgentCardView(card: c, interactive: isLatest),
             ),
         ],
         Padding(
-          padding: const EdgeInsets.only(left: 38, top: 4),
-          child: Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 8, children: [
+          padding: const EdgeInsets.only(left: 44, top: 6),
+          child: Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 8, runSpacing: 4, children: [
             if (message.usedFallback)
-              Text(l.fallbackNotice, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: st.warning))
+              ProviderBadge(message.provider ?? AiProviderKind.localDeterministic, fallback: true)
             else if (message.provider != null)
-              Text(providerLabel(l, message.provider!),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: st.muted)),
+              ProviderBadge(message.provider!),
             if (isLatest)
               TextButton.icon(
                 icon: const Icon(Icons.replay_rounded),
@@ -317,6 +342,7 @@ class _AssistantMessage extends StatelessWidget {
                       message.text,
                       language: context.read<PreferencesCubit>().state.language,
                       rate: context.read<AccessibilityBloc>().state.speechRate,
+                      private: message.provider == AiProviderKind.onDeviceLlm,
                     )),
               ),
           ]),
@@ -419,22 +445,29 @@ class _Composer extends StatelessWidget {
       OrbState.speaking => l.stopSpeaking,
       _ => l.startListening,
     };
-    return Material(
-      color: Theme.of(context).colorScheme.surface,
-      elevation: 8,
+    final st = StatusColors.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(Radii.xl)),
+        border: st.isHighContrast ? Border(top: BorderSide(color: st.line, width: 2)) : null,
+        boxShadow: st.isHighContrast
+            ? null
+            : const [BoxShadow(color: Color(0x140F2A4A), blurRadius: 24, offset: Offset(0, -6))],
+      ),
       child: ResponsiveBody(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           if (voice.partial.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.only(top: 10),
               child: Text('“${voice.partial}”',
                   textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontStyle: FontStyle.italic)),
             ),
           VoiceOrb(
             state: orbState,
             label: orbLabel,
-            size: context.watch<AccessibilityBloc>().state.textScale > 1.4 ? 96 : 88,
+            size: context.watch<AccessibilityBloc>().state.textScale > 1.4 ? 88 : 76,
             onPressed: agent.busy ? null : () => onOrb(voice),
           ),
           Row(children: [
@@ -447,16 +480,108 @@ class _Composer extends StatelessWidget {
                 maxLines: 3,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => onSend(null),
-                decoration: InputDecoration(hintText: l.typeMessage, labelText: l.typeMessage),
+                decoration: InputDecoration(
+                  hintText: l.typeMessage,
+                  labelText: l.typeMessage,
+                  floatingLabelBehavior: FloatingLabelBehavior.never,
+                  fillColor: st.isHighContrast ? Colors.black : AppColors.canvas,
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(999),
+                    borderSide: BorderSide(color: st.isHighContrast ? st.line : Colors.transparent, width: 2),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(999),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+                  ),
+                  disabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(999),
+                    borderSide: const BorderSide(color: Colors.transparent),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+                ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             IconButton.filled(
               tooltip: l.send,
+              style: IconButton.styleFrom(minimumSize: const Size(58, 58)),
               onPressed: agent.busy ? null : () => onSend(null),
-              icon: const Icon(Icons.arrow_upward_rounded),
+              icon: const Icon(Icons.arrow_upward_rounded, size: 26),
             ),
           ]),
+        ]),
+      ),
+    );
+  }
+}
+
+class _Suggestion extends StatelessWidget {
+  const _Suggestion({required this.icon, required this.text, required this.onTap});
+  final IconData icon;
+  final String text;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Card(
+        child: InkWell(
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 64),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 14, 10),
+              child: Row(children: [
+                ExcludeSemantics(child: IconBubble(icon, size: 40)),
+                const SizedBox(width: 14),
+                Expanded(child: Text('“$text”', style: Theme.of(context).textTheme.titleSmall)),
+                ExcludeSemantics(
+                  child: Icon(Icons.arrow_forward_rounded, size: 20, color: StatusColors.of(context).muted),
+                ),
+              ]),
+            ),
+          ),
+        ),
+      );
+}
+
+/// Which engine answered, colour-coded AND worded: on-device (private, green
+/// with a lock), cloud (blue), basic mode (neutral).
+class ProviderBadge extends StatelessWidget {
+  const ProviderBadge(this.provider, {super.key, this.fallback = false});
+  final AiProviderKind provider;
+  final bool fallback;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final st = StatusColors.of(context);
+    final label = fallback ? l.fallbackNotice : providerLabel(l, provider);
+    final (Color fg, Color bg) = fallback
+        ? (st.warning, st.warningBg)
+        : switch (provider) {
+            AiProviderKind.onDeviceLlm => (st.success, st.successBg),
+            AiProviderKind.cloud => (Theme.of(context).colorScheme.primary,
+                st.isHighContrast ? Colors.black : AppColors.navyTint),
+            AiProviderKind.localDeterministic => (st.muted, st.sunken),
+          };
+    return Semantics(
+      label: label,
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(999),
+          border: st.isHighContrast ? Border.all(color: fg, width: 1.5) : null,
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(fallback ? Icons.info_outline_rounded : providerIcon(provider), size: 16, color: fg),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(color: fg, fontWeight: FontWeight.w700)),
+          ),
         ]),
       ),
     );

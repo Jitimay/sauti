@@ -776,6 +776,13 @@ class AppLocalizationsRn extends AppLocalizations {
       'Irungika amakuru make ya banki kuri Gemini ya Google biciye kuri Firebase. Bihagaritswe: Sauti ikoresha umufasha wo kuri telefone.';
 
   @override
+  String get naturalVoiceSetting => 'Ijwi risa n\'iry\'umuntu (Gemini)';
+
+  @override
+  String get naturalVoiceDescription =>
+      'Inyishu zisomwa na Gemini biciye kuri Firebase. Inyishu z\'umufasha wo kuri telefone zama zisomwa n\'ijwi rya telefone. Bihagaritswe: hakoreshwa ijwi rya telefone.';
+
+  @override
   String get cloudAiNotConfigured =>
       'AI yo kuri interineti ntiyashizweho. Sauti ikoresha umufasha wo kuri telefone.';
 

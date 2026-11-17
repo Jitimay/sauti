@@ -28,7 +28,7 @@
     }
   },
   "hosting": {
-    "public": "../build/web",
+    "public": "public",
     "ignore": [
       "firebase.json",
       "**/.*"
@@ -41,11 +41,20 @@
     ],
     "headers": [
       {
-        "source": "**/*.@(js|wasm|css)",
+        "source": "**/@(index.html|main.dart.js|flutter_bootstrap.js|flutter_service_worker.js|flutter.js|version.json|manifest.json)",
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "public, max-age=3600"
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "source": "canvaskit/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=604800"
           }
         ]
       }

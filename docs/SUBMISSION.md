@@ -92,7 +92,7 @@ The repository was created on **Nov 15, 2026**, after the Nov 11 start, and ever
 
 **Demo login:** `demo@sauti.app` / `Sauti2026`, or tap **Try the demo**. The bank is simulated, with fictitious data; no real money is involved.
 
-* **Web (fastest):** `https://<your-project>.web.app`
+* **Web (fastest):** https://sauti-hybrid-ai.web.app
   * Cloud AI works in any browser.
   * On-device needs desktop Chrome 139+ with `chrome://flags/#prompt-api-for-gemini-nano-multimodal-input` enabled. Then go to Settings → *Private on-device AI* → **Download**, and ask a question. The badge shows *On-device AI · private*.
 * **Android:** install `sauti-judging.apk` (link). On-device needs a phone supported by ML Kit's Prompt API (Gemini Nano). Then go to Settings → *Private on-device AI* → **Download**. Switch on airplane mode and ask *"How much money do I have?"*.
@@ -127,7 +127,7 @@ Things to try:
 - [ ] Firebase project: AI Logic (Gemini Developer API) enabled, App Check registered (Android, iOS, Web), Firestore rules and functions deployed (`docs/FIREBASE_SETUP.md`).
 - [ ] App Check debug token created in the console for judging builds, and **revoked after judging**.
 - [ ] Judging APK: `flutter build apk --release --dart-define-from-file=config/env.json` (with `FIREBASE_*` and `SAUTI_APP_CHECK_DEBUG_TOKEN`).
-- [ ] Web hosted: `flutter build web --dart-define-from-file=config/env.json && firebase deploy --only hosting`.
+- [x] Web hosted at https://sauti-hybrid-ai.web.app: `flutter build web --release --dart-define-from-file=config/env.web.json -o firebase/public && (cd firebase && firebase deploy --only hosting)`.
 - [ ] ⚠ verify on a Gemini Nano Android phone: Download → airplane mode → *On-device AI · private*.
 - [ ] ⚠ verify in Chrome with the Prompt API flag.
 - [ ] ⚠ verify on iOS (Apple Intelligence device) if you claim the iOS path; otherwise present iOS as "builds, not demonstrated".

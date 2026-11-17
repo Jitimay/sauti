@@ -63,23 +63,23 @@ class AccessibilitySettingsPage extends StatelessWidget {
           Card(
             child: Column(children: [
               SwitchListTile(
-                secondary: const Icon(Icons.contrast_rounded),
+                secondary: const IconBubble(Icons.contrast_rounded, size: 42),
                 title: Text(l.highContrast),
                 subtitle: Text(l.highContrastDescription),
                 value: s.highContrast,
                 onChanged: (v) => bloc.add(HighContrastChanged(v)),
               ),
-              const Divider(height: 1),
+              const Divider(indent: 18, endIndent: 18),
               SwitchListTile(
-                secondary: const Icon(Icons.view_agenda_outlined),
+                secondary: const IconBubble(Icons.view_agenda_outlined, size: 42),
                 title: Text(l.simplifiedMode),
                 subtitle: Text(l.simplifiedModeDescription),
                 value: s.interactionMode == InteractionMode.simplified,
                 onChanged: (v) => bloc.add(InteractionModeChanged(v ? InteractionMode.simplified : InteractionMode.standard)),
               ),
-              const Divider(height: 1),
+              const Divider(indent: 18, endIndent: 18),
               SwitchListTile(
-                secondary: const Icon(Icons.motion_photos_off_outlined),
+                secondary: const IconBubble(Icons.motion_photos_off_outlined, size: 42),
                 title: Text(l.reduceMotion),
                 value: s.reduceMotion,
                 onChanged: (v) => bloc.add(ReduceMotionChanged(v)),
@@ -90,12 +90,12 @@ class AccessibilitySettingsPage extends StatelessWidget {
           Card(
             child: Column(children: [
               SwitchListTile(
-                secondary: const Icon(Icons.record_voice_over_outlined),
+                secondary: const IconBubble(Icons.record_voice_over_outlined, size: 42),
                 title: Text(l.voiceFeedback),
                 value: s.voiceFeedback,
                 onChanged: (v) => bloc.add(VoiceFeedbackChanged(v)),
               ),
-              const Divider(height: 1),
+              const Divider(indent: 18, endIndent: 18),
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/l10n/l10n_ext.dart';
+import '../../../../core/widgets/layout.dart';
 import '../../../../core/widgets/status_banners.dart';
 import '../../../settings/presentation/bloc/preferences_cubit.dart';
 import '../../../transactions/presentation/widgets/transaction_tile.dart';
@@ -33,7 +34,14 @@ class AgentCardView extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Row(children: [
                     Expanded(child: Text('${a.name} · ${a.maskedNumber}', style: Theme.of(context).textTheme.bodyLarge)),
-                    Text(context.money(a.availableBalance), style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Text(context.money(a.availableBalance), style: Theme.of(context).textTheme.headlineSmall),
+                      ),
+                    ),
                   ]),
                 ),
               ),
@@ -102,7 +110,7 @@ class AgentCardView extends StatelessWidget {
             for (final b in beneficiaries)
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(child: Text(b.name.characters.first)),
+                leading: InitialsAvatar(b.name, size: 44),
                 title: Text(b.name),
                 subtitle: Text('${b.institution} · ${b.maskedAccount}'),
               ),
@@ -143,39 +151,59 @@ class _DraftCard extends StatelessWidget {
     final d = card.draft;
     final st = StatusColors.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
     return Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: scheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: st.warning, width: 2),
+        borderRadius: BorderRadius.circular(Radii.lg),
+        border: Border.all(color: st.isHighContrast ? st.warning : st.warning.withValues(alpha: 0.45), width: 2),
       ),
-      padding: const EdgeInsets.all(18),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Row(children: [
-          Icon(Icons.pending_actions_rounded, color: st.warning),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Semantics(
-              header: true,
-              child: Text(l.draftCardTitle, style: Theme.of(context).textTheme.titleMedium?.copyWith(color: st.warning)),
+        // Header band: what this is and that nothing has moved yet.
+        Container(
+          color: st.warningBg,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Row(children: [
+            Icon(Icons.pending_actions_rounded, color: st.warning),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Semantics(
+                header: true,
+                child: Text(l.draftCardTitle, style: text.titleSmall?.copyWith(color: st.warning, fontWeight: FontWeight.w800)),
+              ),
             ),
-          ),
-        ]),
-        const SizedBox(height: 12),
-        MergeSemantics(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(d.beneficiary.name, style: Theme.of(context).textTheme.titleLarge),
-            Text('${d.beneficiary.institution} · ${d.beneficiary.maskedAccount}', style: Theme.of(context).textTheme.bodyMedium),
-            const SizedBox(height: 8),
-            Text(context.money(d.amount), style: Theme.of(context).textTheme.headlineMedium),
-            Text('${l.confirmBalanceAfter}: ${context.money(d.balanceAfter)}', style: Theme.of(context).textTheme.bodyMedium),
           ]),
         ),
-        const SizedBox(height: 14),
-        FilledButton.icon(
-          onPressed: interactive ? () => context.push(Routes.transferConfirm, extra: d) : null,
-          icon: const Icon(Icons.fact_check_rounded),
-          label: Text(l.reviewAndConfirm),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            MergeSemantics(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  InitialsAvatar(d.beneficiary.name, size: 44),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(d.beneficiary.name, style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                      Text('${d.beneficiary.institution} · ${d.beneficiary.maskedAccount}',
+                          style: text.bodyMedium?.copyWith(color: st.muted)),
+                    ]),
+                  ),
+                ]),
+                const SizedBox(height: 14),
+                Text(context.money(d.amount), style: text.headlineLarge),
+                const SizedBox(height: 2),
+                Text('${l.confirmBalanceAfter}: ${context.money(d.balanceAfter)}', style: text.bodyMedium?.copyWith(color: st.muted)),
+              ]),
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: interactive ? () => context.push(Routes.transferConfirm, extra: d) : null,
+              icon: const Icon(Icons.fact_check_rounded),
+              label: Text(l.reviewAndConfirm),
+            ),
+          ]),
         ),
       ]),
     );
@@ -190,7 +218,7 @@ class _Frame extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Card(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             if (badge != null) ...[badge!, const SizedBox(height: 8)],
             child,

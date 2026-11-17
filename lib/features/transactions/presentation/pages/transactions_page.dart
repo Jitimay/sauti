@@ -41,7 +41,9 @@ class _TransactionsView extends StatelessWidget {
           const SizedBox(height: 12),
           BlocBuilder<TransactionBloc, TransactionState>(
             buildWhen: (a, b) => a.direction != b.direction,
-            builder: (context, s) => SegmentedButton<TransactionDirection?>(
+            builder: (context, s) => SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<TransactionDirection?>(
               showSelectedIcon: true,
               segments: [
                 ButtonSegment(value: null, label: Text(l.filterAll)),
@@ -50,9 +52,10 @@ class _TransactionsView extends StatelessWidget {
               ],
               selected: {s.direction},
               onSelectionChanged: (v) => context.read<TransactionBloc>().add(TransactionFilterChanged(direction: v.first)),
+              ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 14),
           Expanded(
             child: BlocBuilder<TransactionBloc, TransactionState>(builder: (context, s) {
               return switch (s.status) {
@@ -61,11 +64,20 @@ class _TransactionsView extends StatelessWidget {
                     failure: s.failure!,
                     onRetry: () => context.read<TransactionBloc>().add(const TransactionsLoadRequested())),
                 ViewStatus.empty => EmptyView(message: l.noTransactionsYet, icon: Icons.search_off_rounded),
-                _ => ListView(children: [
+                _ => ListView(padding: const EdgeInsets.only(bottom: 24), children: [
                     Align(alignment: Alignment.centerLeft, child: FreshnessBadge(s.transactions!)),
-                    const SizedBox(height: 4),
-                    for (final t in s.transactions!.data)
-                      TransactionTile(transaction: t, onTap: () => context.push(Routes.transaction(t.id))),
+                    const SizedBox(height: 10),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        child: Column(children: [
+                          for (final (i, t) in s.transactions!.data.indexed) ...[
+                            if (i > 0) const Divider(indent: 72, endIndent: 8),
+                            TransactionTile(transaction: t, onTap: () => context.push(Routes.transaction(t.id))),
+                          ],
+                        ]),
+                      ),
+                    ),
                   ]),
               };
             }),

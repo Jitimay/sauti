@@ -425,6 +425,8 @@
   "accessibilitySetting": "Accessibility",
   "cloudAiSetting": "Use cloud AI (Gemini)",
   "cloudAiDescription": "Sends minimal, anonymised banking facts to Google's Gemini via Firebase to understand free-form requests. Off: Sauti uses its on-device assistant.",
+  "naturalVoiceSetting": "Natural voice (Gemini)",
+  "naturalVoiceDescription": "Replies are read aloud by Gemini via Firebase. Answers from the on-device AI always use the phone's own voice, so they never leave the device. Off: the phone's voice is always used.",
   "cloudAiNotConfigured": "Cloud AI is not configured in this build. Sauti uses its on-device assistant.",
   "demoControls": "Demo controls",
   "simulateOffline": "Simulate no connection",

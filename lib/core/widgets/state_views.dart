@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../app/theme/app_colors.dart';
 import '../error/failure.dart';
 import '../l10n/l10n_ext.dart';
+import 'layout.dart';
 
 class LoadingView extends StatelessWidget {
   const LoadingView({super.key});
@@ -56,7 +57,7 @@ class EmptyView extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, size: 48, color: StatusColors.of(context).muted),
+            IconBubble(icon, size: 72, color: StatusColors.of(context).muted, background: StatusColors.of(context).sunken),
             const SizedBox(height: 12),
             Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyLarge),
           ]),
@@ -72,9 +73,14 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(4, 24, 0, 8),
+        padding: EdgeInsets.fromLTRB(4, 24, 0, action == null ? 12 : 4),
         child: Row(children: [
-          Expanded(child: Semantics(header: true, child: Text(title, style: Theme.of(context).textTheme.titleMedium))),
+          Expanded(
+            child: Semantics(
+              header: true,
+              child: Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 19, fontWeight: FontWeight.w800)),
+            ),
+          ),
           if (action != null) TextButton(onPressed: onAction, child: Text(action!)),
         ]),
       );

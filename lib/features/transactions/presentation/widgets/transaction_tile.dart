@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/l10n/l10n_ext.dart';
+import '../../../../core/widgets/layout.dart';
 import '../../../banking/domain/entities/bank_transaction.dart';
 
 /// One transaction row. Direction is conveyed by icon, sign AND words —
@@ -31,34 +32,46 @@ class TransactionTile extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: EdgeInsets.symmetric(vertical: dense ? 8 : 12, horizontal: 4),
+            padding: EdgeInsets.symmetric(vertical: dense ? 8 : 12, horizontal: 8),
             child: Row(children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: t.isIncoming ? s.successBg : Theme.of(context).colorScheme.surfaceContainer,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: t.isIncoming ? s.success : Theme.of(context).colorScheme.outlineVariant),
-                ),
-                child: Icon(t.isIncoming ? Icons.south_west_rounded : t.category.icon,
-                    color: t.isIncoming ? s.success : Theme.of(context).colorScheme.onSurface),
+              IconBubble(
+                t.isIncoming ? Icons.south_west_rounded : t.category.icon,
+                size: dense ? 44 : 48,
+                color: t.isIncoming ? s.success : Theme.of(context).colorScheme.onSurface,
+                background: t.isIncoming ? s.successBg : s.sunken,
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(t.counterparty, style: Theme.of(context).textTheme.titleMedium, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  LayoutBuilder(builder: (context, c) {
+                    final name = Text(t.counterparty,
+                        style: Theme.of(context).textTheme.titleMedium, maxLines: 2, overflow: TextOverflow.ellipsis);
+                    final value = Text(amount,
+                        maxLines: 1,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: t.isIncoming ? s.success : null,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ));
+                    // Narrow (cards in chat, large text): amount under the name.
+                    final scale = MediaQuery.textScalerOf(context).scale(1);
+                    if (c.maxWidth < 230 * scale) {
+                      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        name,
+                        FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: value),
+                      ]);
+                    }
+                    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Expanded(child: name),
+                      const SizedBox(width: 12),
+                      value,
+                    ]);
+                  }),
                   const SizedBox(height: 2),
                   Text('${t.isIncoming ? l.received : t.category.label(l)} · $date',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: s.muted)),
                 ]),
               ),
-              const SizedBox(width: 8),
-              Text(amount,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: t.isIncoming ? s.success : null,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      )),
             ]),
           ),
         ),

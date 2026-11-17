@@ -55,3 +55,11 @@ firebase/.firebaserc
 firebase-debug.log
 # Local environment (never commit real values)
 config/env.json
+config/env.*.json
+!config/env.example.json
+# Web build for Firebase Hosting (flutter build web -o firebase/public)
+firebase/public/
+
+# Design renders (SAUTI_SCREENSHOTS=1 flutter test test/screenshots --update-goldens)
+test/screenshots/goldens/
+firebase/.firebase/

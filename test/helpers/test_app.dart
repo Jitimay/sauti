@@ -58,7 +58,8 @@ final class FakeSynthesizer implements SpeechSynthesizer {
   @override
   Future<bool> supports(AppLanguage language) async => supported.contains(language);
   @override
-  Future<void> speak(String text, {required AppLanguage language, required double rate}) async => spoken.add(text);
+  Future<void> speak(String text, {required AppLanguage language, required double rate, bool private = false}) async =>
+      spoken.add(text);
   @override
   Future<void> stop() async {}
 }

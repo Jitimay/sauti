@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../../app/di/injection.dart';
 import '../../../../app/router/routes.dart';
+import '../../../../app/theme/app_colors.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/l10n/l10n_ext.dart';
 import '../../../../core/widgets/layout.dart';
@@ -42,7 +43,7 @@ class _LoginPageState extends State<LoginPage> {
     final l = context.l10n;
     final isDemo = sl<AppConfig>().isDemo;
     return Scaffold(
-      appBar: AppBar(title: Text(l.signIn)),
+      appBar: AppBar(),
       body: SafeArea(
         child: BlocBuilder<AuthBloc, AuthState>(
           builder: (context, state) {
@@ -50,15 +51,33 @@ class _LoginPageState extends State<LoginPage> {
             return ResponsiveBody(
               child: AutofillGroup(
                 child: ListView(children: [
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
+                  Semantics(header: true, child: Text(l.signIn, style: Theme.of(context).textTheme.headlineLarge)),
+                  const SizedBox(height: 20),
                   if (isDemo) ...[
-                    Card(
+                    Container(
+                      decoration: BoxDecoration(
+                        color: StatusColors.of(context).accentSoft,
+                        borderRadius: BorderRadius.circular(Radii.lg),
+                        border: Border.all(
+                          color: StatusColors.of(context).isHighContrast
+                              ? StatusColors.of(context).accent
+                              : AppColors.amber.withValues(alpha: 0.5),
+                          width: StatusColors.of(context).isHighContrast ? 2 : 1,
+                        ),
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(l.demoCredentialsHint(DemoAuthRepository.demoEmail, DemoAuthRepository.demoPassword),
-                              style: Theme.of(context).textTheme.bodyLarge),
-                          const SizedBox(height: 8),
+                          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Icon(Icons.science_rounded, color: StatusColors.of(context).isHighContrast ? StatusColors.of(context).accent : AppColors.amberDeep),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(l.demoCredentialsHint(DemoAuthRepository.demoEmail, DemoAuthRepository.demoPassword),
+                                  style: Theme.of(context).textTheme.bodyLarge),
+                            ),
+                          ]),
+                          const SizedBox(height: 12),
                           OutlinedButton.icon(
                             onPressed: () {
                               _email.text = DemoAuthRepository.demoEmail;

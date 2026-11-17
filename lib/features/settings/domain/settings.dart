@@ -55,6 +55,7 @@ final class AppPreferences extends Equatable {
     this.languageChosen = false,
     this.onboardingComplete = false,
     this.cloudAiEnabled = true,
+    this.naturalVoiceEnabled = true,
   });
 
   final AppLanguage language;
@@ -64,16 +65,26 @@ final class AppPreferences extends Equatable {
   /// User consent for sending minimised banking data to the cloud model.
   final bool cloudAiEnabled;
 
-  AppPreferences copyWith({AppLanguage? language, bool? languageChosen, bool? onboardingComplete, bool? cloudAiEnabled}) =>
+  /// Replies read aloud by Gemini TTS (cloud) instead of the device voice.
+  final bool naturalVoiceEnabled;
+
+  AppPreferences copyWith({
+    AppLanguage? language,
+    bool? languageChosen,
+    bool? onboardingComplete,
+    bool? cloudAiEnabled,
+    bool? naturalVoiceEnabled,
+  }) =>
       AppPreferences(
         language: language ?? this.language,
         languageChosen: languageChosen ?? this.languageChosen,
         onboardingComplete: onboardingComplete ?? this.onboardingComplete,
         cloudAiEnabled: cloudAiEnabled ?? this.cloudAiEnabled,
+        naturalVoiceEnabled: naturalVoiceEnabled ?? this.naturalVoiceEnabled,
       );
 
   @override
-  List<Object?> get props => [language, languageChosen, onboardingComplete, cloudAiEnabled];
+  List<Object?> get props => [language, languageChosen, onboardingComplete, cloudAiEnabled, naturalVoiceEnabled];
 }
 
 abstract interface class SettingsRepository {

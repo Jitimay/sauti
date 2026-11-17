@@ -1480,6 +1480,18 @@ abstract class AppLocalizations {
   /// **'Sends minimal, anonymised banking facts to Google\'s Gemini via Firebase to understand free-form requests. Off: Sauti uses its on-device assistant.'**
   String get cloudAiDescription;
 
+  /// No description provided for @naturalVoiceSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Natural voice (Gemini)'**
+  String get naturalVoiceSetting;
+
+  /// No description provided for @naturalVoiceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Replies are read aloud by Gemini via Firebase. Answers from the on-device AI always use the phone\'s own voice, so they never leave the device. Off: the phone\'s voice is always used.'**
+  String get naturalVoiceDescription;
+
   /// No description provided for @cloudAiNotConfigured.
   ///
   /// In en, this message translates to:

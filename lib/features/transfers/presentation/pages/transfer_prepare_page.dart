@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../app/router/routes.dart';
+import '../../../../app/theme/app_colors.dart';
 import '../../../../core/l10n/l10n_ext.dart';
 import '../../../../core/money/money_parser.dart';
 import '../../../../core/widgets/layout.dart';
@@ -65,25 +66,49 @@ class _TransferPreparePageState extends State<TransferPreparePage> {
               return ResponsiveBody(
                 child: ListView(children: [
                   const SizedBox(height: 12),
-                  Row(children: [
-                    const Icon(Icons.verified_user_outlined),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(l.savedRecipientsOnly, style: Theme.of(context).textTheme.bodyLarge)),
-                  ]),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: StatusColors.of(context).isHighContrast ? Colors.black : AppColors.navyTint,
+                      borderRadius: BorderRadius.circular(Radii.md),
+                      border: StatusColors.of(context).isHighContrast ? Border.all(color: AppColors.hcText, width: 2) : null,
+                    ),
+                    child: Row(children: [
+                      Icon(Icons.verified_user_rounded, color: Theme.of(context).colorScheme.primary),
+                      const SizedBox(width: 12),
+                      Expanded(child: Text(l.savedRecipientsOnly, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600))),
+                    ]),
+                  ),
                   const SizedBox(height: 16),
-                  Semantics(header: true, child: Text(l.chooseRecipient, style: Theme.of(context).textTheme.titleMedium)),
-                  const SizedBox(height: 8),
+                  Semantics(header: true, child: Text(l.chooseRecipient, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 19, fontWeight: FontWeight.w800))),
+                  const SizedBox(height: 10),
                   RadioGroup<String>(
                     groupValue: _beneficiaryId,
                     onChanged: (v) => setState(() => _beneficiaryId = v),
                     child: Column(children: [
                       for (final b in s.beneficiaries)
-                        Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: RadioListTile<String>(
-                            value: b.id,
-                            title: Text(b.name, style: Theme.of(context).textTheme.titleMedium),
-                            subtitle: Text('${b.institution} · ${b.maskedAccount}'),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Card(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(Radii.lg),
+                              side: BorderSide(
+                                color: _beneficiaryId == b.id
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).colorScheme.outlineVariant,
+                                width: _beneficiaryId == b.id ? 2 : 1,
+                              ),
+                            ),
+                            color: _beneficiaryId == b.id && !StatusColors.of(context).isHighContrast
+                                ? AppColors.navyTint.withValues(alpha: 0.5)
+                                : null,
+                            child: RadioListTile<String>(
+                              value: b.id,
+                              controlAffinity: ListTileControlAffinity.trailing,
+                              secondary: InitialsAvatar(b.name, size: 46),
+                              title: Text(b.name, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                              subtitle: Text('${b.institution} · ${b.maskedAccount}'),
+                            ),
                           ),
                         ),
                     ]),
@@ -93,7 +118,7 @@ class _TransferPreparePageState extends State<TransferPreparePage> {
                     controller: _amount,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d ,.]'))],
-                    style: Theme.of(context).textTheme.headlineSmall,
+                    style: Theme.of(context).textTheme.headlineMedium,
                     decoration: InputDecoration(
                       labelText: l.amountLabel,
                       prefixIcon: const Icon(Icons.payments_outlined),

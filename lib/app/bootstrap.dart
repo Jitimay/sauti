@@ -42,6 +42,10 @@ Future<bool> _initFirebase(AppConfig config) async {
     // App Check: attests that requests (Firestore, Functions, AI Logic) come
     // from this genuine app. Debug providers only in debug builds when asked.
     // A registered debug token (judging builds) works in any build mode.
+    // Web without a reCAPTCHA key (or debug token): no App Check provider can
+    // work, and a broken one makes every Firebase call wait. Skip it; cloud
+    // AI is then disabled for this build (see configureDependencies).
+    if (kIsWeb && !config.webAppCheckReady) return true;
     final token = config.appCheckDebugToken.isEmpty ? null : config.appCheckDebugToken;
     final debug = token != null || (kDebugMode && config.appCheckDebug);
     await FirebaseAppCheck.instance.activate(
@@ -51,7 +55,9 @@ Future<bool> _initFirebase(AppConfig config) async {
           ? null
           : debug
               ? WebDebugProvider(debugToken: token)
-              : ReCaptchaV3Provider(const String.fromEnvironment('RECAPTCHA_SITE_KEY')),
+              : config.recaptchaEnterpriseKey.isNotEmpty
+                  ? ReCaptchaEnterpriseProvider(config.recaptchaEnterpriseKey)
+                  : ReCaptchaV3Provider(config.recaptchaSiteKey),
     );
     return true;
   } catch (e) {

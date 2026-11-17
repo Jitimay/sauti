@@ -48,7 +48,13 @@ final class GeminiAiProvider implements AiProvider {
             systemInstruction: systemInstruction,
             tools: tools,
             toolConfig: ToolConfig(functionCallingConfig: FunctionCallingConfig.auto()),
-            generationConfig: GenerationConfig(temperature: 0.2, maxOutputTokens: 600),
+            // Banking lookups need little deliberation; low thinking (the lowest
+            // level gemini-3.8-flash accepts) shortens each round trip.
+            generationConfig: GenerationConfig(
+              temperature: 0.2,
+              maxOutputTokens: 600,
+              thinkingConfig: ThinkingConfig.withThinkingLevel(ThinkingLevel.low),
+            ),
           ),
         );
         return m.generateContent(contents);

@@ -37,12 +37,15 @@ final class _RecognitionReceived extends VoiceEvent {
 }
 
 final class SpeechPlaybackStarted extends VoiceEvent {
-  const SpeechPlaybackStarted(this.text, {required this.language, required this.rate});
+  const SpeechPlaybackStarted(this.text, {required this.language, required this.rate, this.private = false});
   final String text;
   final AppLanguage language;
   final double rate;
+
+  /// Produced on-device: speak with the device voice only.
+  final bool private;
   @override
-  List<Object?> get props => [text, language, rate];
+  List<Object?> get props => [text, language, rate, private];
 }
 
 final class SpeechPlaybackStopped extends VoiceEvent {
@@ -183,7 +186,7 @@ final class VoiceBloc extends Bloc<VoiceEvent, VoiceState> {
     }
     emit(state.copyWith(status: VoiceStatus.speaking, lastSpoken: e.text, ttsUnavailableFor: () => null));
     try {
-      await _tts.speak(e.text, language: e.language, rate: e.rate);
+      await _tts.speak(e.text, language: e.language, rate: e.rate, private: e.private);
     } catch (_) {
       emit(state.copyWith(ttsUnavailableFor: () => e.language));
     }

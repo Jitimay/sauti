@@ -230,6 +230,8 @@
   "accessibilitySetting": "Uburyo bworoshe",
   "cloudAiSetting": "Koresha AI yo kuri interineti (Gemini)",
   "cloudAiDescription": "Irungika amakuru make ya banki kuri Gemini ya Google biciye kuri Firebase. Bihagaritswe: Sauti ikoresha umufasha wo kuri telefone.",
+  "naturalVoiceSetting": "Ijwi risa n'iry'umuntu (Gemini)",
+  "naturalVoiceDescription": "Inyishu zisomwa na Gemini biciye kuri Firebase. Inyishu z'umufasha wo kuri telefone zama zisomwa n'ijwi rya telefone. Bihagaritswe: hakoreshwa ijwi rya telefone.",
   "cloudAiNotConfigured": "AI yo kuri interineti ntiyashizweho. Sauti ikoresha umufasha wo kuri telefone.",
   "demoControls": "Ivyo kugenzura demo",
   "simulateOffline": "Igereranya nta interineti",
