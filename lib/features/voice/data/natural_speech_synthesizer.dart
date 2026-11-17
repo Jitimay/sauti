@@ -44,26 +44,44 @@ final class NaturalSpeechSynthesizer implements SpeechSynthesizer {
   }) : _now = now ?? DateTime.now;
 
   /// Production wiring: `gemini-3.8-flash-tts` via Firebase AI Logic.
+  ///
+  /// Uses [SpeechMetadata] style so the voice sounds warm, not flat, and
+  /// explicit language codes so the model never guesses the wrong dialect.
   factory NaturalSpeechSynthesizer.firebase({
     required SpeechSynthesizer fallback,
     required Future<bool> Function() allowed,
-    String model = 'gemini-3.8-flash-lite-tts',
-    String voice = 'Kore',
+    String model = 'gemini-3.8-flash-tts',
+    String voice = 'Aoede',
   }) {
-    GenerativeModel? m;
+    // One model per language so the language code is baked in at construction.
+    final models = <String, GenerativeModel>{};
+    GenerativeModel modelFor(AppLanguage language) {
+      final langCode = language == AppLanguage.french ? 'fr-FR' : 'en-US';
+      return models.putIfAbsent(langCode, () => FirebaseAI.googleAI(useLimitedUseAppCheckTokens: true).generativeModel(
+        model: model,
+        generationConfig: GenerationConfig(
+          responseModalities: [ResponseModalities.audio],
+          speechConfig: SpeechConfig(voiceName: voice, languageCode: langCode),
+        ),
+      ));
+    }
     return NaturalSpeechSynthesizer(
       fallback: fallback,
       allowed: allowed,
       player: createClipPlayer(),
+      // Shorter cooldown: 30 s so a transient error doesn't silence good voice
+      // for 5 minutes.
+      cooldown: const Duration(seconds: 30),
       generate: (prompt) async {
-        m ??= FirebaseAI.googleAI(useLimitedUseAppCheckTokens: true).generativeModel(
-          model: model,
-          generationConfig: GenerationConfig(
-            responseModalities: [ResponseModalities.audio],
-            speechConfig: SpeechConfig(voiceName: voice),
-          ),
-        );
-        final r = await m!.generateContent([Content.text(prompt)]);
+        // The language is encoded in the prompt prefix: "Say in French…"
+        final language = prompt.startsWith('Say in French') ? AppLanguage.french : AppLanguage.english;
+        final m = modelFor(language);
+        // SpeechMetadata(style) makes the delivery warm and clear rather than
+        // flat. The pace instruction is in the text; the style sets the tone.
+        final content = Content.multi([
+          TextPart(prompt, speechMetadata: SpeechMetadata(style: 'warm, clear, and friendly')),
+        ]);
+        final r = await m.generateContent([content]);
         for (final p in r.candidates.firstOrNull?.content.parts ?? const <Part>[]) {
           if (p is InlineDataPart && p.mimeType.startsWith('audio/')) return (bytes: p.bytes, mimeType: p.mimeType);
         }

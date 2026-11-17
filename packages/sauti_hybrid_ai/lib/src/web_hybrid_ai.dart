@@ -95,11 +95,14 @@ final class WebHybridAi implements HybridAiClient {
   @override
   Future<HybridStatus> status({required String languageCode}) async {
     final state = await _onDeviceState();
+    // Only report onDeviceAvailable=true when Chrome confirms the model is
+    // fully ready to run inference right now. Any other state (downloadable,
+    // downloading, unavailable) means the app must not label replies
+    // "On-device AI · private" or show the tile as ready.
+    final ready = state == OnDeviceState.available;
     return HybridStatus(
-      onDeviceAvailable: state == OnDeviceState.available,
+      onDeviceAvailable: ready,
       onDeviceReason: state.name,
-      // The on-device model only classifies intent; Sauti renders the reply in
-      // the user's language. Language policy lives in the Dart provider.
       onDeviceSupportsLanguage: true,
       cloudAvailable: _core != null,
       onDeviceState: state,
@@ -124,9 +127,14 @@ final class WebHybridAi implements HybridAiClient {
       final response = result.getProperty<JSObject>('response'.toJS);
       final text = response.callMethod<JSString>('text'.toJS).toDart;
       final source = response.getProperty<JSAny?>('inferenceSource'.toJS)?.dartify()?.toString().toLowerCase() ?? '';
+      // Chrome reports inferenceSource as "on-device" even when the SDK fell
+      // back to cloud internally. Cross-check: if the on-device model was not
+      // available, the reply came from the cloud regardless of what the SDK says.
+      final onDeviceReady = (await _onDeviceState()) == OnDeviceState.available;
+      final isOnDevice = onDeviceReady && source.contains('device');
       return HybridJsonResult(
         json: HybridJsonResult.parseObject(text),
-        source: source.contains('device') ? HybridSource.onDevice : HybridSource.cloud,
+        source: isOnDevice ? HybridSource.onDevice : HybridSource.cloud,
       );
     } on HybridAiException {
       rethrow;

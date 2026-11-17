@@ -41,8 +41,17 @@ enum OnDeviceState {
   /// Not supported on this device, OS or browser.
   unavailable;
 
-  static OnDeviceState parse(Object? v) =>
-      OnDeviceState.values.where((s) => s.name == v).firstOrNull ?? OnDeviceState.unavailable;
+  static OnDeviceState parse(Object? v) {
+    // Dart enum names: available / downloadable / downloading / unavailable.
+    // Chrome Prompt API strings: "readily" / "after-download" / "no".
+    // Map both so the tile and provider work correctly in Chrome.
+    return switch (v) {
+      'available' || 'readily' => OnDeviceState.available,
+      'downloadable' || 'after-download' => OnDeviceState.downloadable,
+      'downloading' => OnDeviceState.downloading,
+      _ => OnDeviceState.unavailable,
+    };
+  }
 }
 
 /// Which engine produced a reply.
