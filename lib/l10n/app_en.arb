@@ -93,7 +93,7 @@
   "nameInvalid": "Enter your name.",
   "passwordRules": "At least 8 characters, with letters and numbers.",
   "registerTitle": "Create your account",
-  "registerDemoNote": "Demo mode: new accounts last only for this session and use simulated data.",
+  "registerDemoNote": "Demo mode: accounts you create are saved in this browser and use simulated data. No real bank is involved.",
   "resetTitle": "Reset password",
   "resetBody": "Enter your email and we will send you a reset link.",
   "sendResetLink": "Send reset link",

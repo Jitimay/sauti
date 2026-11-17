@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,9 +11,22 @@ import '../../domain/repositories/auth_repository.dart';
 /// DEMO-mode authentication. Credentials are published in the README for
 /// judges; nothing here protects real data because no real data exists.
 ///
-/// Only a non-sensitive "demo session active" flag is persisted.
+/// The demo account and any accounts created during the session are persisted
+/// in SharedPreferences so they survive page reloads on web.
 final class DemoAuthRepository implements AuthRepository {
   DemoAuthRepository(this._prefs) {
+    // Restore registered accounts from prefs.
+    final raw = _prefs.getString(_registeredKey);
+    if (raw != null) {
+      try {
+        final decoded = jsonDecode(raw) as Map<String, dynamic>;
+        for (final entry in decoded.entries) {
+          final v = entry.value as Map<String, dynamic>;
+          _registered[entry.key] = (name: v['name'] as String, password: v['password'] as String);
+        }
+      } catch (_) {/* ignore corrupt prefs */}
+    }
+    // Restore active session.
     if (_prefs.getBool(_sessionKey) ?? false) {
       _user = AppUser(
         id: 'demo-user',
@@ -30,13 +44,22 @@ final class DemoAuthRepository implements AuthRepository {
   static const _sessionKey = 'demo_session_active';
   static const _nameKey = 'demo_session_name';
   static const _emailKey = 'demo_session_email';
+  static const _registeredKey = 'demo_registered_accounts';
 
   final SharedPreferences _prefs;
   final _controller = StreamController<AppUser?>.broadcast();
   AppUser? _user;
 
-  /// In demo mode, registered accounts live only for this app session.
+  /// Registered accounts — persisted across reloads.
   final Map<String, ({String name, String password})> _registered = {};
+
+  Future<void> _saveRegistered() async {
+    final encoded = {
+      for (final e in _registered.entries)
+        e.key: {'name': e.value.name, 'password': e.value.password},
+    };
+    await _prefs.setString(_registeredKey, jsonEncode(encoded));
+  }
 
   @override
   AppUser? get currentUser => _user;
@@ -81,6 +104,7 @@ final class DemoAuthRepository implements AuthRepository {
     final e = email.trim().toLowerCase();
     if (e == demoEmail || _registered.containsKey(e)) return const Err(AuthFailure(FailureCode.authEmailInUse));
     _registered[e] = (name: displayName.trim(), password: password);
+    await _saveRegistered();
     final user = AppUser(id: 'demo-user', displayName: displayName.trim(), email: e, isDemo: true);
     await _setUser(user);
     return Ok(user);
