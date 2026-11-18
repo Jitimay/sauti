@@ -499,7 +499,7 @@ abstract class AppLocalizations {
   /// No description provided for @registerDemoNote.
   ///
   /// In en, this message translates to:
-  /// **'Demo mode: new accounts last only for this session and use simulated data.'**
+  /// **'Demo mode: accounts you create are saved in this browser and use simulated data. No real bank is involved.'**
   String get registerDemoNote;
 
   /// No description provided for @resetTitle.

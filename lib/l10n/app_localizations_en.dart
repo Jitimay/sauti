@@ -231,7 +231,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get registerDemoNote =>
-      'Demo mode: new accounts last only for this session and use simulated data.';
+      'Demo mode: accounts you create are saved in this browser and use simulated data. No real bank is involved.';
 
   @override
   String get resetTitle => 'Reset password';

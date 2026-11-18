@@ -234,7 +234,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get registerDemoNote =>
-      'Mode démo : les nouveaux comptes durent le temps de la session et utilisent des données simulées.';
+      'Mode démo : les comptes que vous créez sont sauvegardés dans ce navigateur et utilisent des données simulées. Aucune vraie banque n\'est impliquée.';
 
   @override
   String get resetTitle => 'Réinitialiser le mot de passe';

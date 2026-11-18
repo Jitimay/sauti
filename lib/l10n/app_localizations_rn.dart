@@ -228,7 +228,7 @@ class AppLocalizationsRn extends AppLocalizations {
 
   @override
   String get registerDemoNote =>
-      'Demo: konti nshasha zimara iki gihe gusa kandi zikoresha amakuru y\'akarorero.';
+      'Demo: konti ushaka kuremana zibikwa kuri ubu bushabire kandi zikoresha amakuru y\'akarorero. Nta banki nyayo irimo.';
 
   @override
   String get resetTitle => 'Subiza ijambo kabanga';
