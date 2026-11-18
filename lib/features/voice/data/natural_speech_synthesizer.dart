@@ -127,18 +127,33 @@ final class NaturalSpeechSynthesizer implements SpeechSynthesizer {
   Future<void> speak(String text, {required AppLanguage language, required double rate, bool private = false}) async {
     await stop();
     final myTurn = ++_generation;
-    if (!private && languages.contains(language) && !_cloudPaused && await _safeAllowed()) {
-      final wav = await _naturalAudio(text, language, rate);
-      if (myTurn != _generation) return; // stopped or replaced while generating
-      if (wav != null) {
-        try {
-          return await _player.play(wav);
-        } catch (e) {
-          debugPrint('Sauti natural voice: playback failed ($e); using device voice');
-          _pausedUntil = _now().add(cooldown); // playback broken here → device voice
+    if (private) {
+      debugPrint('Sauti TTS: private reply → device voice');
+    } else if (!languages.contains(language)) {
+      debugPrint('Sauti TTS: language ${language.code} not in cloud set → device voice');
+    } else if (_cloudPaused) {
+      debugPrint('Sauti TTS: cloud paused until $_pausedUntil → device voice');
+    } else {
+      final allowed = await _safeAllowed();
+      if (!allowed) {
+        debugPrint('Sauti TTS: not allowed (cloud AI off / natural voice off / offline) → device voice');
+      } else {
+        debugPrint('Sauti TTS: requesting Gemini TTS for ${language.code}, rate=$rate');
+        final wav = await _naturalAudio(text, language, rate);
+        if (myTurn != _generation) return;
+        if (wav != null) {
+          debugPrint('Sauti TTS: got ${wav.length} bytes, playing');
+          try {
+            return await _player.play(wav);
+          } catch (e) {
+            debugPrint('Sauti TTS: playback failed ($e) → device voice, cooling down ${cooldown.inSeconds}s');
+            _pausedUntil = _now().add(cooldown);
+          }
+        } else {
+          debugPrint('Sauti TTS: generate returned null → device voice');
         }
+        if (myTurn != _generation) return;
       }
-      if (myTurn != _generation) return;
     }
     return _fallback.speak(text, language: language, rate: rate, private: private);
   }
@@ -146,17 +161,26 @@ final class NaturalSpeechSynthesizer implements SpeechSynthesizer {
   Future<Uint8List?> _naturalAudio(String text, AppLanguage language, double rate) async {
     final key = '${language.code}|${rate.toStringAsFixed(2)}|$text';
     final hit = _cache[key];
-    if (hit != null) return hit;
+    if (hit != null) {
+      debugPrint('Sauti TTS: cache hit');
+      return hit;
+    }
     try {
-      final audio = await _generate(prompt(text, language: language, rate: rate)).timeout(timeout);
-      if (audio == null) return null;
+      final p = prompt(text, language: language, rate: rate);
+      debugPrint('Sauti TTS: prompt → "$p"');
+      final audio = await _generate(p).timeout(timeout);
+      if (audio == null) {
+        debugPrint('Sauti TTS: generate returned null (no audio part in response)');
+        return null;
+      }
+      debugPrint('Sauti TTS: received ${audio.bytes.length} bytes, mime=${audio.mimeType}');
       final wav = toWav(audio);
       if (_cache.length >= 8) _cache.remove(_cache.keys.first);
       return _cache[key] = wav;
     } catch (e) {
-      debugPrint('Sauti natural voice: generation failed ($e); using device voice');
+      debugPrint('Sauti TTS: generation failed → $e');
       _pausedUntil = _now().add(cooldown);
-      return null; // quota, offline, timeout, blocked → device voice
+      return null;
     }
   }
 
