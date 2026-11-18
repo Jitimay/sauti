@@ -23,7 +23,7 @@ final class HybridAiProvider implements AiProvider, LanguageAwareProvider {
     required this._now,
     required this.cloudModel,
     this.historyTurns = 4,
-    this.timeout = const Duration(seconds: 30),
+    this.timeout = const Duration(seconds: 10),
   });
 
   final HybridAiClient _client;
@@ -59,11 +59,15 @@ final class HybridAiProvider implements AiProvider, LanguageAwareProvider {
       );
 
   /// Decides which engines may run. Returns null when none can.
+  /// When on-device is not available, return null so the cloud-only
+  /// GeminiAiProvider handles the request (it uses function calling properly,
+  /// vs. the native session which has its own timeout behaviour).
   Future<({bool onDevice, bool cloud})?> _route(AppLanguage language) async {
     final status = await _client.status(languageCode: language.code);
     final onDevice = status.onDeviceAvailable && status.onDeviceSupportsLanguage;
+    if (!onDevice) return null; // let GeminiAiProvider handle cloud
     final cloud = status.cloudAvailable && await _cloudAllowed();
-    return onDevice || cloud ? (onDevice: onDevice, cloud: cloud) : null;
+    return (onDevice: true, cloud: cloud);
   }
 
   @override

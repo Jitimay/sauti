@@ -102,7 +102,7 @@ void main() {
     expect(s.registry.auditTrail.single.request.name, 'get_account_balance');
   });
 
-  test('cloud fallback inside the hybrid session is labelled cloud', () async {
+  test('when on-device is unavailable the hybrid provider is skipped (cloud handled by GeminiAiProvider)', () async {
     final client = FakeHybridClient(
       onDevice: false,
       cloud: true,
@@ -110,10 +110,12 @@ void main() {
       script: (tool) async => 'Hello!',
     );
     s = TestStack(extraProviders: [provider(client, cloudAllowed: true)]);
+    // HybridAiProvider._route() returns null when onDevice=false, so this
+    // provider is skipped. The orchestrator falls through to LocalIntentProvider.
+    // Real cloud calls go through GeminiAiProvider (not in this test stack).
     final m = await ask('hello');
-    expect(m.provider, AiProviderKind.cloud);
-    expect(client.requests.single.allowOnDevice, isFalse);
-    expect(client.requests.single.allowCloud, isTrue);
+    expect(client.requests, isEmpty, reason: 'provider skipped when on-device unavailable');
+    expect(m.provider, AiProviderKind.localDeterministic);
   });
 
   test('Kirundi without on-device support and no cloud → basic mode, not flagged as a failure', () async {

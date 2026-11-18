@@ -31,7 +31,7 @@ final class HybridIntentProvider implements AiProvider, LanguageAwareProvider {
     required this._now,
     required this.cloudModel,
     this.onDeviceLanguages = const {AppLanguage.english, AppLanguage.french},
-    this.timeout = const Duration(seconds: 20),
+    this.timeout = const Duration(seconds: 8),
     this._parser = const IntentParser(),
   });
 
