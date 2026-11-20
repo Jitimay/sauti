@@ -31,7 +31,7 @@
   "failureOfflineNotAllowed": "Hors ligne. Les virements exigent une connexion et ne sont jamais mis en attente.",
   "failureAiUnavailable": "L'assistant est indisponible pour le moment.",
   "failureToolNotPermitted": "Action non autorisée.",
-  "failureVoiceUnavailable": "La saisie vocale n'est pas disponible sur cet appareil.",
+  "failureVoiceUnavailable": "La saisie vocale n'est pas disponible sur cet appareil. Utilisez le champ texte ci-dessous.",
   "failureVoicePermission": "L'accès au micro est nécessaire pour la voix. Vous pouvez écrire.",
   "failureVoiceLanguage": "La voix n'est pas disponible dans cette langue sur cet appareil.",
   "failureServer": "Le service a rencontré un problème. Rien n'a changé.",

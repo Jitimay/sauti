@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:sauti_hybrid_ai/sauti_hybrid_ai.dart';
 
 import '../../../../core/l10n/app_language.dart';
@@ -65,6 +66,7 @@ final class HybridAiProvider implements AiProvider, LanguageAwareProvider {
   Future<({bool onDevice, bool cloud})?> _route(AppLanguage language) async {
     final status = await _client.status(languageCode: language.code);
     final onDevice = status.onDeviceAvailable && status.onDeviceSupportsLanguage;
+    debugPrint('HybridAiProvider: status onDevice=$onDevice reason=${status.onDeviceReason} cloud=${status.cloudAvailable}');
     if (!onDevice) return null; // let GeminiAiProvider handle cloud
     final cloud = status.cloudAvailable && await _cloudAllowed();
     return (onDevice: true, cloud: cloud);

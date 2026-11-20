@@ -31,7 +31,7 @@
   "failureOfflineNotAllowed": "Nta interineti. Kurungika bisaba interineti kandi ntibibikwa ngo bikorwe mu nyuma.",
   "failureAiUnavailable": "Umufasha ntaboneka ubu.",
   "failureToolNotPermitted": "Ico gikorwa nticemewe.",
-  "failureVoiceUnavailable": "Kuvuga ntibikunda kuri iyi telefone.",
+  "failureVoiceUnavailable": "Kuvuga ntibikunda kuri iyi telefone. Andika icyo ushaka munsi.",
   "failureVoicePermission": "Hakenewe uruhusha rwa mikoro. Ushobora kwandika.",
   "failureVoiceLanguage": "Kuvuga muri uru rurimi ntibikunda kuri iyi telefone.",
   "failureServer": "Hari ikibazo. Nta na kimwe cahindutse.",

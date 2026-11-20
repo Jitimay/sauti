@@ -114,7 +114,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get failureVoiceUnavailable =>
-      'Voice input is not available on this device.';
+      'Voice input is not available on this device. Use the text box below to type your request.';
 
   @override
   String get failureVoicePermission =>

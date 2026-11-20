@@ -38,7 +38,7 @@
   "failureOfflineNotAllowed": "You are offline. Transfers need a live connection and are never queued.",
   "failureAiUnavailable": "The assistant is unavailable right now.",
   "failureToolNotPermitted": "That action is not permitted.",
-  "failureVoiceUnavailable": "Voice input is not available on this device.",
+  "failureVoiceUnavailable": "Voice input is not available on this device. Use the text box below to type your request.",
   "failureVoicePermission": "Microphone permission is needed for voice. You can still type.",
   "failureVoiceLanguage": "Voice is not available in this language on this device.",
   "failureServer": "The service had a problem. Nothing was changed.",

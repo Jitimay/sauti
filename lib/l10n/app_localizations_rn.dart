@@ -111,7 +111,8 @@ class AppLocalizationsRn extends AppLocalizations {
   String get failureToolNotPermitted => 'Ico gikorwa nticemewe.';
 
   @override
-  String get failureVoiceUnavailable => 'Kuvuga ntibikunda kuri iyi telefone.';
+  String get failureVoiceUnavailable =>
+      'Kuvuga ntibikunda kuri iyi telefone. Andika icyo ushaka munsi.';
 
   @override
   String get failureVoicePermission =>

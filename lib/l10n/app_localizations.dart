@@ -289,7 +289,7 @@ abstract class AppLocalizations {
   /// No description provided for @failureVoiceUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'Voice input is not available on this device.'**
+  /// **'Voice input is not available on this device. Use the text box below to type your request.'**
   String get failureVoiceUnavailable;
 
   /// No description provided for @failureVoicePermission.

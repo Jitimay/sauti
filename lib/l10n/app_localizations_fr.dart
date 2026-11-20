@@ -116,7 +116,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get failureVoiceUnavailable =>
-      'La saisie vocale n\'est pas disponible sur cet appareil.';
+      'La saisie vocale n\'est pas disponible sur cet appareil. Utilisez le champ texte ci-dessous.';
 
   @override
   String get failureVoicePermission =>
