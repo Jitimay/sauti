@@ -117,7 +117,7 @@ flutter test integration_test/app_test.dart -d <device-id>   # 10 e2e scenarios 
 
 ## Documentation
 
-[Architecture](docs/ARCHITECTURE.md) · [AI architecture](docs/AI_ARCHITECTURE.md) · [Security](docs/SECURITY.md) · [Firebase setup](docs/FIREBASE_SETUP.md) · [Testing](docs/TESTING.md) · [Demo guide](docs/DEMO_GUIDE.md) · [Roadmap](docs/ROADMAP.md) · [Implementation plan](IMPLEMENTATION_PLAN.md) · [Hackathon submission](docs/SUBMISSION.md)
+[Architecture](docs/ARCHITECTURE.md) · [AI architecture](docs/AI_ARCHITECTURE.md) · [Security](docs/SECURITY.md) · [Firebase setup](docs/FIREBASE_SETUP.md) · [Testing](docs/TESTING.md) · [Demo guide](docs/DEMO_GUIDE.md) · [Video demo script](docs/VIDEO_DESCRIPTION.md) · [Roadmap](docs/ROADMAP.md) · [Implementation plan](IMPLEMENTATION_PLAN.md) · [Hackathon submission](docs/SUBMISSION.md)
 
 ## License
 

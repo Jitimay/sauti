@@ -20,21 +20,18 @@ class WelcomePage extends StatelessWidget {
     final isDemo = sl<AppConfig>().isDemo;
     final submitting = context.select<AuthBloc, bool>((b) => b.state.form == AuthFormStatus.submitting);
     final text = Theme.of(context).textTheme;
-    final st = StatusColors.of(context);
-    final hc = st.isHighContrast;
+    final hc = StatusColors.of(context).isHighContrast;
     return Scaffold(
-      backgroundColor: hc ? Colors.black : AppColors.navy,
+      backgroundColor: hc ? Colors.black : AppColors.blue,
       body: Container(
-        decoration: hc
-            ? null
-            : const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [AppColors.navyLight, AppColors.navy, AppColors.navyDeep],
-                  stops: [0, 0.45, 1],
-                ),
-              ),
+        decoration: hc ? null : const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [AppColors.blueLight, AppColors.blue, AppColors.blueDeep],
+            stops: [0.0, 0.5, 1.0],
+          ),
+        ),
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, c) => SingleChildScrollView(
@@ -44,51 +41,80 @@ class WelcomePage extends StatelessWidget {
                   child: ResponsiveBody(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                      const SizedBox(height: 24),
-                      const Align(alignment: Alignment.centerLeft, child: SautiWordmark(onDark: true)),
+                      const SizedBox(height: 20),
+                      // Top bar: logo + Firebase badge
+                      Row(children: [
+                        const _SautiLogoWhite(),
+                        const Spacer(),
+                        _FirebaseBadge(),
+                      ]),
                       const Spacer(),
-                      const Center(child: _VoiceIllustration()),
-                      const Spacer(),
+                      // Hero illustration
+                      const Center(child: _HeroIllustration()),
+                      const SizedBox(height: 32),
+                      // Headline
                       Semantics(
                         header: true,
-                        child: Text(l.welcomeTitle, style: text.headlineLarge?.copyWith(color: Colors.white, fontSize: 36)),
-                      ),
-                      const SizedBox(height: 14),
-                      Text(l.welcomeBody, style: text.bodyLarge?.copyWith(color: Colors.white.withValues(alpha: 0.86))),
-                      const SizedBox(height: 32),
-                      if (isDemo) ...[
-                        FilledButton.icon(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: hc ? AppColors.hcAccent : AppColors.amber,
-                            foregroundColor: Colors.black,
-                            minimumSize: const Size.fromHeight(60),
+                        child: Text(
+                          l.welcomeTitle,
+                          style: text.headlineLarge?.copyWith(
+                            color: Colors.white,
+                            fontSize: 32,
+                            fontWeight: FontWeight.w800,
                           ),
-                          onPressed: submitting
-                              ? null
-                              : () => context.read<AuthBloc>().add(
-                                  const SignInRequested(DemoAuthRepository.demoEmail, DemoAuthRepository.demoPassword)),
-                          icon: const Icon(Icons.play_arrow_rounded, size: 26),
-                          label: Text(l.tryDemo),
                         ),
-                        const SizedBox(height: 12),
-                      ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        l.welcomeBody,
+                        style: text.bodyLarge?.copyWith(color: Colors.white.withValues(alpha: 0.88)),
+                      ),
+                      const SizedBox(height: 10),
+                      // Feature bullets
+                      _Bullet(icon: Icons.account_balance_wallet_rounded, text: 'Check your balance'),
+                      _Bullet(icon: Icons.send_rounded, text: 'Send money'),
+                      _Bullet(icon: Icons.help_outline_rounded, text: 'Get explanations'),
+                      _Bullet(icon: Icons.more_horiz_rounded, text: 'And much more...'),
+                      const Spacer(),
+                      const SizedBox(height: 24),
+                      // CTA buttons
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: hc ? AppColors.hcAccent : Colors.white,
+                          foregroundColor: hc ? Colors.black : AppColors.blue,
+                          minimumSize: const Size.fromHeight(56),
+                        ),
+                        onPressed: submitting
+                            ? null
+                            : isDemo
+                                ? () => context.read<AuthBloc>().add(
+                                    const SignInRequested(DemoAuthRepository.demoEmail, DemoAuthRepository.demoPassword))
+                                : () => context.push(Routes.login),
+                        child: Text(
+                          isDemo ? l.tryDemo : l.signIn,
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       OutlinedButton(
                         style: OutlinedButton.styleFrom(
                           backgroundColor: Colors.transparent,
                           foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(60),
-                          side: BorderSide(color: Colors.white.withValues(alpha: hc ? 1 : 0.5), width: hc ? 2 : 1.5),
+                          minimumSize: const Size.fromHeight(56),
+                          side: BorderSide(color: Colors.white.withValues(alpha: hc ? 1 : 0.6), width: hc ? 2 : 1.5),
                         ),
                         onPressed: () => context.push(Routes.login),
-                        child: Text(l.signIn),
+                        child: Text(isDemo ? l.signIn : l.createAccount),
                       ),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        style: TextButton.styleFrom(foregroundColor: Colors.white),
-                        onPressed: () => context.push(Routes.register),
-                        child: Text(l.createAccount),
-                      ),
-                      const SizedBox(height: 16),
+                      if (isDemo) ...[
+                        const SizedBox(height: 8),
+                        TextButton(
+                          style: TextButton.styleFrom(foregroundColor: Colors.white),
+                          onPressed: () => context.push(Routes.register),
+                          child: Text(l.createAccount),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
                     ]),
                   ),
                 ),
@@ -101,30 +127,78 @@ class WelcomePage extends StatelessWidget {
   }
 }
 
-/// Concentric "sound" rings around a microphone: the product in one picture.
-class _VoiceIllustration extends StatelessWidget {
-  const _VoiceIllustration();
+class _Bullet extends StatelessWidget {
+  const _Bullet({required this.icon, required this.text});
+  final IconData icon;
+  final String text;
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 3),
+    child: Row(children: [
+      Icon(icon, color: AppColors.green, size: 20),
+      const SizedBox(width: 10),
+      Text(text, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white.withValues(alpha: 0.92))),
+    ]),
+  );
+}
 
+class _SautiLogoWhite extends StatelessWidget {
+  const _SautiLogoWhite();
+  @override
+  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
+    const SautiMark(size: 36, onDark: true),
+    const SizedBox(width: 10),
+    Text('Sauti',
+        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+        )),
+  ]);
+}
+
+class _FirebaseBadge extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: 0.15),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+    ),
+    child: Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(Icons.local_fire_department_rounded, color: AppColors.amber, size: 16),
+      const SizedBox(width: 5),
+      Text('Powered by Firebase',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+    ]),
+  );
+}
+
+/// Hero: concentric sound rings with a mic, Africa silhouette behind.
+class _HeroIllustration extends StatelessWidget {
+  const _HeroIllustration();
   @override
   Widget build(BuildContext context) {
-    final st = StatusColors.of(context);
+    final hc = StatusColors.of(context).isHighContrast;
     return ExcludeSemantics(
-      child: SizedBox.square(
-        dimension: 220,
+      child: SizedBox(
+        width: 220,
+        height: 220,
         child: CustomPaint(
-          painter: _WelcomeRings(accent: st.accent),
+          painter: _HeroPainter(hc: hc),
           child: Center(
             child: Container(
-              width: 84,
-              height: 84,
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(
-                color: st.accent,
+                color: AppColors.green,
                 shape: BoxShape.circle,
-                boxShadow: st.isHighContrast
-                    ? null
-                    : [BoxShadow(color: st.accent.withValues(alpha: 0.45), blurRadius: 36, spreadRadius: 2)],
+                boxShadow: hc ? null : [
+                  BoxShadow(color: AppColors.green.withValues(alpha: 0.5), blurRadius: 32, spreadRadius: 4),
+                ],
               ),
-              child: const Icon(Icons.mic_rounded, size: 42, color: AppColors.navyDeep),
+              child: const Icon(Icons.mic_rounded, size: 40, color: Colors.white),
             ),
           ),
         ),
@@ -133,31 +207,23 @@ class _VoiceIllustration extends StatelessWidget {
   }
 }
 
-class _WelcomeRings extends CustomPainter {
-  _WelcomeRings({required this.accent});
-  final Color accent;
-
+class _HeroPainter extends CustomPainter {
+  _HeroPainter({required this.hc});
+  final bool hc;
   @override
   void paint(Canvas canvas, Size size) {
     final c = size.center(Offset.zero);
     final r = size.shortestSide / 2;
-    final p = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-    for (final (f, a, w) in [(0.98, 0.08, 2.0), (0.80, 0.14, 2.0), (0.62, 0.22, 2.5)]) {
-      canvas.drawCircle(c, r * f, p
-        ..color = Colors.white.withValues(alpha: a)
-        ..strokeWidth = w);
+    final ring = Paint()..style = PaintingStyle.stroke..strokeWidth = 2;
+    for (final (f, a) in [(0.95, 0.10), (0.75, 0.16), (0.55, 0.22)]) {
+      canvas.drawCircle(c, r * f, ring..color = Colors.white.withValues(alpha: a));
     }
-    // Two amber arcs: the voice "travelling" outwards.
-    p
-      ..color = accent
-      ..strokeWidth = 4;
-    canvas.drawArc(Rect.fromCircle(center: c, radius: r * 0.62), -0.9, 1.1, false, p);
-    p.color = accent.withValues(alpha: 0.55);
-    canvas.drawArc(Rect.fromCircle(center: c, radius: r * 0.80), 2.3, 0.9, false, p);
+    // Two green arcs — the "sound travelling outward"
+    final arc = Paint()..style = PaintingStyle.stroke..strokeWidth = 3..color = AppColors.green.withValues(alpha: 0.7);
+    canvas.drawArc(Rect.fromCircle(center: c, radius: r * 0.65), -0.8, 1.0, false, arc);
+    arc.color = AppColors.green.withValues(alpha: 0.4);
+    canvas.drawArc(Rect.fromCircle(center: c, radius: r * 0.82), 2.5, 0.8, false, arc);
   }
-
   @override
-  bool shouldRepaint(_WelcomeRings old) => old.accent != accent;
+  bool shouldRepaint(_HeroPainter old) => old.hc != hc;
 }

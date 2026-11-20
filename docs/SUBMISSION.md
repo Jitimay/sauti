@@ -108,6 +108,8 @@ Things to try:
 
 ## 4. Demo video script (≤ 3:00, English or English subtitles, public on YouTube)
 
+*(See the full copy-pasteable YouTube description and narration script in [docs/VIDEO_DESCRIPTION.md](VIDEO_DESCRIPTION.md))*
+
 | Time | Shot | Voice-over |
 |---|---|---|
 | 0:00–0:20 | A blind user's hands on a phone, TalkBack speaking | "In Burundi, banking apps lock out people who can't read small screens. Sauti lets them just talk to their bank." |
