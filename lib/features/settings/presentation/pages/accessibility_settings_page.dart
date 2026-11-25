@@ -18,106 +18,184 @@ class AccessibilitySettingsPage extends StatelessWidget {
     final s = context.watch<AccessibilityBloc>().state;
     final bloc = context.read<AccessibilityBloc>();
     final scales = AccessibilitySettings.textScales;
-    final idx = scales.indexWhere((v) => (v - s.textScale).abs() < 0.01).clamp(0, scales.length - 1);
+    final idx = scales
+        .indexWhere((v) => (v - s.textScale).abs() < 0.01)
+        .clamp(0, scales.length - 1);
     final percent = (s.textScale * 100).round();
 
     return Scaffold(
       appBar: AppBar(title: Text(l.accessibilityTitle)),
       body: ResponsiveBody(
-        child: ListView(children: [
-          SectionHeader(l.textSize),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  IconButton.outlined(
-                    tooltip: '${l.textSize} −',
-                    onPressed: idx == 0 ? null : () => bloc.add(FontSizeChanged(scales[idx - 1])),
-                    icon: const Icon(Icons.text_decrease_rounded),
+        child: ListView(
+          children: [
+            SectionHeader(l.textSize),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        IconButton.outlined(
+                          tooltip: '${l.textSize} −',
+                          onPressed: idx == 0
+                              ? null
+                              : () =>
+                                    bloc.add(FontSizeChanged(scales[idx - 1])),
+                          icon: const Icon(Icons.text_decrease_rounded),
+                        ),
+                        Expanded(
+                          child: Slider(
+                            value: idx.toDouble(),
+                            min: 0,
+                            max: (scales.length - 1).toDouble(),
+                            divisions: scales.length - 1,
+                            label: l.textSizeValue(percent),
+                            semanticFormatterCallback: (v) => l.textSizeValue(
+                              (scales[v.round()] * 100).round(),
+                            ),
+                            onChanged: (v) =>
+                                bloc.add(FontSizeChanged(scales[v.round()])),
+                          ),
+                        ),
+                        IconButton.outlined(
+                          tooltip: '${l.textSize} +',
+                          onPressed: idx == scales.length - 1
+                              ? null
+                              : () =>
+                                    bloc.add(FontSizeChanged(scales[idx + 1])),
+                          icon: const Icon(Icons.text_increase_rounded),
+                        ),
+                      ],
+                    ),
+                    Center(
+                      child: Text(
+                        l.textSizeValue(percent),
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                    const Divider(height: 24),
+                    Text(
+                      l.previewText,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    secondary: const IconBubble(
+                      Icons.contrast_rounded,
+                      size: 42,
+                    ),
+                    title: Text(l.highContrast),
+                    subtitle: Text(l.highContrastDescription),
+                    value: s.highContrast,
+                    onChanged: (v) => bloc.add(HighContrastChanged(v)),
                   ),
-                  Expanded(
-                    child: Slider(
-                      value: idx.toDouble(),
-                      min: 0,
-                      max: (scales.length - 1).toDouble(),
-                      divisions: scales.length - 1,
-                      label: l.textSizeValue(percent),
-                      semanticFormatterCallback: (_) => l.textSizeValue(percent),
-                      onChanged: (v) => bloc.add(FontSizeChanged(scales[v.round()])),
+                  const Divider(indent: 18, endIndent: 18),
+                  SwitchListTile(
+                    secondary: const IconBubble(
+                      Icons.view_agenda_outlined,
+                      size: 42,
+                    ),
+                    title: Text(l.simplifiedMode),
+                    subtitle: Text(l.simplifiedModeDescription),
+                    value: s.interactionMode == InteractionMode.simplified,
+                    onChanged: (v) => bloc.add(
+                      InteractionModeChanged(
+                        v
+                            ? InteractionMode.simplified
+                            : InteractionMode.standard,
+                      ),
                     ),
                   ),
-                  IconButton.outlined(
-                    tooltip: '${l.textSize} +',
-                    onPressed: idx == scales.length - 1 ? null : () => bloc.add(FontSizeChanged(scales[idx + 1])),
-                    icon: const Icon(Icons.text_increase_rounded),
+                  const Divider(indent: 18, endIndent: 18),
+                  SwitchListTile(
+                    secondary: const IconBubble(
+                      Icons.motion_photos_off_outlined,
+                      size: 42,
+                    ),
+                    title: Text(l.reduceMotion),
+                    value: s.reduceMotion,
+                    onChanged: (v) => bloc.add(ReduceMotionChanged(v)),
                   ),
-                ]),
-                Center(child: Text(l.textSizeValue(percent), style: Theme.of(context).textTheme.titleMedium)),
-                const Divider(height: 24),
-                Text(l.previewText, style: Theme.of(context).textTheme.bodyLarge),
-              ]),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: Column(children: [
-              SwitchListTile(
-                secondary: const IconBubble(Icons.contrast_rounded, size: 42),
-                title: Text(l.highContrast),
-                subtitle: Text(l.highContrastDescription),
-                value: s.highContrast,
-                onChanged: (v) => bloc.add(HighContrastChanged(v)),
-              ),
-              const Divider(indent: 18, endIndent: 18),
-              SwitchListTile(
-                secondary: const IconBubble(Icons.view_agenda_outlined, size: 42),
-                title: Text(l.simplifiedMode),
-                subtitle: Text(l.simplifiedModeDescription),
-                value: s.interactionMode == InteractionMode.simplified,
-                onChanged: (v) => bloc.add(InteractionModeChanged(v ? InteractionMode.simplified : InteractionMode.standard)),
-              ),
-              const Divider(indent: 18, endIndent: 18),
-              SwitchListTile(
-                secondary: const IconBubble(Icons.motion_photos_off_outlined, size: 42),
-                title: Text(l.reduceMotion),
-                value: s.reduceMotion,
-                onChanged: (v) => bloc.add(ReduceMotionChanged(v)),
-              ),
-            ]),
-          ),
-          SectionHeader(l.voiceFeedback),
-          Card(
-            child: Column(children: [
-              SwitchListTile(
-                secondary: const IconBubble(Icons.record_voice_over_outlined, size: 42),
-                title: Text(l.voiceFeedback),
-                value: s.voiceFeedback,
-                onChanged: (v) => bloc.add(VoiceFeedbackChanged(v)),
-              ),
-              const Divider(indent: 18, endIndent: 18),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(l.speechSpeed, style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  SegmentedButton<double>(
-                    segments: [
-                      ButtonSegment(value: 0.3, label: Text(l.speechSlow)),
-                      ButtonSegment(value: 0.5, label: Text(l.speechNormal)),
-                      ButtonSegment(value: 0.75, label: Text(l.speechFast)),
-                    ],
-                    selected: {
-                      s.speechRate <= 0.4 ? 0.3 : (s.speechRate >= 0.65 ? 0.75 : 0.5),
-                    },
-                    onSelectionChanged: (v) => bloc.add(SpeechRateChanged(v.first)),
+            SectionHeader(l.voiceFeedback),
+            Card(
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    secondary: const IconBubble(
+                      Icons.record_voice_over_outlined,
+                      size: 42,
+                    ),
+                    title: Text(l.voiceFeedback),
+                    value: s.voiceFeedback,
+                    onChanged: (v) => bloc.add(VoiceFeedbackChanged(v)),
                   ),
-                ]),
+                  const Divider(indent: 18, endIndent: 18),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l.speechSpeed,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final labelScale =
+                                MediaQuery.textScalerOf(context).scale(16) / 16;
+                            return SegmentedButton<double>(
+                              direction: constraints.maxWidth < 320 * labelScale
+                                  ? Axis.vertical
+                                  : Axis.horizontal,
+                              style: SegmentedButton.styleFrom(
+                                minimumSize: const Size(48, 56),
+                              ),
+                              segments: [
+                                ButtonSegment(
+                                  value: 0.3,
+                                  label: Text(l.speechSlow),
+                                ),
+                                ButtonSegment(
+                                  value: 0.5,
+                                  label: Text(l.speechNormal),
+                                ),
+                                ButtonSegment(
+                                  value: 0.75,
+                                  label: Text(l.speechFast),
+                                ),
+                              ],
+                              selected: {
+                                s.speechRate <= 0.4
+                                    ? 0.3
+                                    : (s.speechRate >= 0.65 ? 0.75 : 0.5),
+                              },
+                              onSelectionChanged: (v) =>
+                                  bloc.add(SpeechRateChanged(v.first)),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ]),
-          ),
-          const SizedBox(height: 32),
-        ]),
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
       ),
     );
   }

@@ -73,7 +73,8 @@ abstract interface class BankSnapshotStore {
 
 /// Encrypted at rest via platform keystore/keychain.
 final class SecureBankSnapshotStore implements BankSnapshotStore {
-  SecureBankSnapshotStore(this._storage, {String? namespace}) : _key = 'bank_snapshot_v1_${namespace ?? 'default'}';
+  SecureBankSnapshotStore(this._storage, {String? namespace})
+    : _key = 'bank_snapshot_v1_${namespace ?? 'default'}';
 
   final FlutterSecureStorage _storage;
   final String _key;
@@ -84,21 +85,26 @@ final class SecureBankSnapshotStore implements BankSnapshotStore {
   /// silently drop the sections saved by the others.
   Future<void> _tail = Future<void>.value();
 
-  Future<void> _serialized(Future<void> Function() body) {
+  Future<T> _serialized<T>(Future<T> Function() body) {
     final next = _tail.then((_) => body());
-    _tail = next.catchError((Object _) {});
+    _tail = next.then<void>((_) {}, onError: (Object _) {});
     return next;
   }
 
   @override
-  Future<BankSnapshot?> read() async {
+  Future<BankSnapshot?> read() => _serialized(_readSnapshot);
+
+  Future<BankSnapshot?> _readSnapshot() async {
+    final raw = await _storage.read(key: _key);
+    if (raw == null) return null;
     try {
-      final raw = await _storage.read(key: _key);
-      if (raw == null) return null;
       final j = (jsonDecode(raw) as Map).cast<String, Object?>();
       List<T>? list<T>(String k, T Function(Map<String, Object?>) f) =>
-          (j[k] as List?)?.map((e) => f((e as Map).cast<String, Object?>())).toList();
-      DateTime? time(String k) => j[k] == null ? null : DateTime.parse(j[k]! as String);
+          (j[k] as List?)
+              ?.map((e) => f((e as Map).cast<String, Object?>()))
+              .toList();
+      DateTime? time(String k) =>
+          j[k] == null ? null : DateTime.parse(j[k]! as String);
       return BankSnapshot(
         accounts: list('accounts', BankMappers.accountFrom),
         transactions: list('transactions', BankMappers.transactionFrom),
@@ -111,7 +117,7 @@ final class SecureBankSnapshotStore implements BankSnapshotStore {
       );
     } catch (_) {
       // Corrupt cache is discarded, never trusted.
-      await clear();
+      await _storage.delete(key: _key);
       return null;
     }
   }
@@ -125,7 +131,7 @@ final class SecureBankSnapshotStore implements BankSnapshotStore {
     required DateTime at,
   }) => _serialized(() async {
     final s = BankSnapshot.merge(
-      await read(),
+      await _readSnapshot(),
       accounts: accounts,
       transactions: transactions,
       notifications: notifications,

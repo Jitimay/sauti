@@ -292,10 +292,22 @@ abstract class AppLocalizations {
   /// **'Voice input is not available on this device. Use the text box below to type your request.'**
   String get failureVoiceUnavailable;
 
+  /// No description provided for @failureMicrophoneCapture.
+  ///
+  /// In en, this message translates to:
+  /// **'Your browser could not start the microphone. Check the input device in your sound settings, then try again or type below.'**
+  String get failureMicrophoneCapture;
+
+  /// No description provided for @failureSpeechService.
+  ///
+  /// In en, this message translates to:
+  /// **'Your browser’s speech recognition service is unavailable. Try another browser or type below.'**
+  String get failureSpeechService;
+
   /// No description provided for @failureVoicePermission.
   ///
   /// In en, this message translates to:
-  /// **'Microphone permission is needed for voice. You can still type.'**
+  /// **'Allow microphone access in your browser or device settings, then try again. You can still type.'**
   String get failureVoicePermission;
 
   /// No description provided for @failureVoiceLanguage.
@@ -543,6 +555,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Available balance'**
   String get availableBalance;
+
+  /// No description provided for @showBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Show balance'**
+  String get showBalance;
+
+  /// No description provided for @hideBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide balance'**
+  String get hideBalance;
 
   /// No description provided for @recentActivity.
   ///
@@ -1042,6 +1066,12 @@ abstract class AppLocalizations {
   /// **'New balance'**
   String get receiptNewBalance;
 
+  /// No description provided for @receiptAmountTo.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} sent to {name}'**
+  String receiptAmountTo(String amount, String name);
+
   /// No description provided for @receiptSpoken.
   ///
   /// In en, this message translates to:
@@ -1222,6 +1252,12 @@ abstract class AppLocalizations {
   /// **'Tap the microphone and speak, or type below.'**
   String get stateIdle;
 
+  /// No description provided for @stateMicrophoneAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for microphone access…'**
+  String get stateMicrophoneAccess;
+
   /// No description provided for @stateListening.
   ///
   /// In en, this message translates to:
@@ -1299,6 +1335,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Repeat'**
   String get repeat;
+
+  /// No description provided for @muteVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute voice'**
+  String get muteVoice;
+
+  /// No description provided for @unmuteVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute voice'**
+  String get unmuteVoice;
 
   /// No description provided for @stopSpeaking.
   ///
@@ -1417,7 +1465,7 @@ abstract class AppLocalizations {
   /// No description provided for @voiceLanguageUnsupported.
   ///
   /// In en, this message translates to:
-  /// **'Voice input in {language} is not available on this device. You can type, or use French voice.'**
+  /// **'Voice input in {language} is not available on this device. You can type your request below.'**
   String voiceLanguageUnsupported(String language);
 
   /// No description provided for @useFrenchVoice.
@@ -1435,7 +1483,7 @@ abstract class AppLocalizations {
   /// No description provided for @ttsUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'No voice for {language} on this device. Replies are shown as text.'**
+  /// **'Speech playback in {language} is unavailable right now. You can read the reply on screen.'**
   String ttsUnavailable(String language);
 
   /// No description provided for @you.
@@ -1477,7 +1525,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudAiDescription.
   ///
   /// In en, this message translates to:
-  /// **'Sends minimal, anonymised banking facts to Google\'s Gemini via Firebase to understand free-form requests. Off: Sauti uses its on-device assistant.'**
+  /// **'Allows Google Gemini to process your requests, recent conversation, and selected banking details. Turning it off keeps AI replies on this device.'**
   String get cloudAiDescription;
 
   /// No description provided for @naturalVoiceSetting.
@@ -1489,7 +1537,7 @@ abstract class AppLocalizations {
   /// No description provided for @naturalVoiceDescription.
   ///
   /// In en, this message translates to:
-  /// **'Replies are read aloud by Gemini via Firebase. Answers from the on-device AI always use the phone\'s own voice, so they never leave the device. Off: the phone\'s voice is always used.'**
+  /// **'Online replies can be sent to Gemini via Firebase for natural speech. Replies from private on-device AI use the device voice.'**
   String get naturalVoiceDescription;
 
   /// No description provided for @cloudAiNotConfigured.
@@ -1570,6 +1618,30 @@ abstract class AppLocalizations {
   /// **'Stronger colours and borders for low vision.'**
   String get highContrastDescription;
 
+  /// No description provided for @voiceConsentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read replies aloud?'**
+  String get voiceConsentTitle;
+
+  /// No description provided for @voiceConsentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Sauti can speak your replies, including banking details that people nearby may hear. You can change this in Accessibility settings.'**
+  String get voiceConsentBody;
+
+  /// No description provided for @voiceConsentDecline.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep replies quiet'**
+  String get voiceConsentDecline;
+
+  /// No description provided for @voiceConsentAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow spoken replies'**
+  String get voiceConsentAllow;
+
   /// No description provided for @voiceFeedback.
   ///
   /// In en, this message translates to:
@@ -1641,6 +1713,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Activity'**
   String get navActivity;
+
+  /// No description provided for @navInsights.
+  ///
+  /// In en, this message translates to:
+  /// **'Insights'**
+  String get navInsights;
 
   /// No description provided for @navSettings.
   ///

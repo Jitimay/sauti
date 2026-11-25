@@ -1,12 +1,8 @@
 # Sauti
 
-**Technology without barriers.**
+Sauti is a voice and text banking assistant designed for people with low vision in Burundi. Ask “How much money do I have?” to hear your balance and see it in a card. When the connection drops, the app labels the last saved balance with its timestamp. The interface supports Kirundi, French, and English.
 
-Sauti is an AI banking agent for Burundi and the wider African market, built for blind and visually impaired people, people with limited hand mobility, elderly users, people with limited digital literacy, and anyone who would rather talk to their bank in Kirundi, French or English than navigate menus.
-
-You say what you want: *"How much money do I have?"*, *"Explain my last transaction"*, *"Send 20,000 BIF to Jean"*. Sauti works out the intent, calls **permission-controlled banking tools**, and answers in plain speech. It is not a chatbot that makes things up: every figure comes from a tool, and **money only moves after you verify on your device and press Send yourself**.
-
-> **DEMO build:** the default build uses a clearly labelled **simulated bank** with fictitious data. No real money is involved.
+The demo uses a **simulated bank** with fictitious data. Sauti can draft a transfer for a saved recipient. The user reviews the amount and fee, authenticates, and presses Send.
 
 ---
 
@@ -14,26 +10,15 @@ You say what you want: *"How much money do I have?"*, *"Explain my last transact
 
 | Area | What works |
 |---|---|
-| AI banking agent | Voice and text input; spoken replies; conversation history; listening, thinking and tool-running indicators; structured cards; error recovery |
-| Hybrid AI (Firebase AI Logic) | **On-device first on the web and Android.** **Web (Chrome 139+):** Chrome's built-in Gemini Nano via the Firebase AI Logic JS SDK hybrid mode (`PREFER_ON_DEVICE`), **verified live** (reCAPTCHA Enterprise App Check, cloud Gemini fallback, `inferenceSource` badge). **Android:** Gemini Nano via the Firebase AI Logic hybrid SDK (`PREFER_ON_DEVICE`). **iOS:** Apple Foundation Models with Firebase's `GeminiLanguageModel` as cloud fallback in one `LanguageModelSession`. On Android and Web the on-device model only labels the request as a JSON intent: Sauti's typed tools fetch the data and its templates write the reply, so **the model never writes a figure** and banking data never reaches a model. Cloud tier: Gemini 3.8 Flash with typed function calling and thinking. Offline without a model: **basic mode** (deterministic intent engine). Each reply is labelled *On-device AI · private*, *Cloud AI* or *Basic mode*. |
-| Natural voice | Gemini TTS (`gemini-3.8-flash-lite-tts`, voice Kore) via Firebase AI Logic for English and French — **verified live** (audio returns in ~4 s). On-device replies are **never** sent to cloud TTS. Device-voice fallback with novelty-voice filter (Atkinson fonts, Samantha/Thomas on macOS). 8-clip cache for instant Repeat. |
-| Tools | `get_account_balance`, `get_recent_transactions`, `search_transactions`, `get_transaction_details`, `explain_transaction`, `calculate_monthly_spending`, `list_beneficiaries`, `prepare_transfer`, `confirm_transfer`, `get_notifications` |
-| Transfers | Saved recipients only, then a draft, then device biometric/passcode (or typed password), then an explicit **Send**, then a bank-verified receipt. State machine, idempotency, limits, cancel, no offline queueing. |
-| Banking | Dashboard, accounts, transaction history with search and filters, details, spending insights (deterministic, integer money), notifications |
-| Accessibility | Screen-reader semantics on every screen, text scaling up to 200% on top of the OS setting, high-contrast theme, simplified mode, reduced motion, 56dp touch targets, never colour-only, voice speed control. Voice is never required. |
-| Languages | English, Français, Ikirundi for the UI and agent replies. Kirundi voice support is detected at runtime, with a fallback. |
-| Offline | Encrypted last-known snapshot, labelled **"saved at HH:mm · not live"**. The local agent keeps working. Transfers are blocked. |
-| Security | Restrictive Firestore rules; server-side transfers in Cloud Functions (auth, App Check, idempotency); secure storage; no secrets in source |
+| Hybrid AI | On eligible desktop Chrome, Firebase AI Logic uses Gemini Nano to interpret requests. Typed banking tools fetch the data used in local replies. Cloud Gemini handles requests when the local model is unavailable and cloud AI is enabled. A deterministic **Basic mode** covers common requests without a model. |
+| Banking | Balances, searchable transaction history, spending insights, notifications, and reviewable transfer drafts. Transfers require a connection. |
+| Accessibility | Voice and text input, read-aloud replies, screen-reader semantics, high contrast, text-size controls, and reduced motion. |
+| Voice | Cloud Gemini text-to-speech for supported English and French replies, with device voice fallback. Private on-device replies use device speech. |
+| Firebase sandbox | Firebase Auth and App Check, owner-restricted Firestore rules, and Cloud Functions for sandbox transfer validation and execution. |
 
 ## Live demo
 
-**Web:** https://sauti-hybrid-ai.web.app — Cloud AI (Gemini via Firebase AI Logic) works in any browser. For the on-device path, use desktop Chrome 139+ with `chrome://flags/#prompt-api-for-gemini-nano-multimodal-input` enabled, then Settings → *Private on-device AI* → **Download**.
-
-Demo login: `demo@sauti.app` / `Sauti2026` — or tap **Try the demo** on the welcome screen.
-
-## Screenshots
-
-_See the demo video (YouTube link in the Devpost submission). Key screens: welcome, dashboard (navy balance card with sound rings), assistant with Cloud AI and On-device AI badges, transfer draft card, transfer receipt, high-contrast mode, Kirundi UI, 200% text scale._
+Open the web demo and select **Try the demo**, or sign in with the fictitious credentials `demo@sauti.app` / `Sauti2026`. Ask “How much money do I have?” and compare the response badge on a Chrome device with Gemini Nano ready and an online browser without it. [Hosted demo](https://sauti-hybrid-ai.web.app) · [Judge walkthrough and Chrome setup](docs/DEMO_GUIDE.md)
 
 ## Architecture
 
@@ -84,7 +69,7 @@ All configuration is passed with `--dart-define`. See `config/env.example.json` 
 | `SAUTI_ENV` | `demo` | `demo` = simulated bank; `live` = Firebase sandbox bank |
 | `SAUTI_AI_MODEL` | `gemini-3.8-flash` | Gemini model used through Firebase AI Logic |
 | `SAUTI_FUNCTIONS_REGION` | `europe-west1` | Must match the deployed functions |
-| `FIREBASE_*` | empty | Firebase client options. If empty, cloud AI is disabled and the on-device engine is used. |
+| `FIREBASE_*` | empty | Firebase client options. Configure these and web App Check to exercise Firebase AI Logic in Chrome. |
 | `SAUTI_APP_CHECK_DEBUG` | `false` | Use App Check debug providers (debug builds only) |
 | `SAUTI_APP_CHECK_DEBUG_TOKEN` | empty | A debug token registered in the Firebase console, for judging/test builds only. Revoke it afterwards. |
 
@@ -100,7 +85,7 @@ See **[docs/FIREBASE_SETUP.md](docs/FIREBASE_SETUP.md)**: project creation, App 
 
 ```bash
 flutter analyze
-flutter test                                          # 180 pass, 6 skipped (screenshots)
+flutter test
 flutter test integration_test/app_test.dart -d <device-id>   # 10 e2e scenarios on a device
 (cd firebase/functions && npm install && npm test)    # server transfer rules
 (cd firebase/rules-tests && npm install && npm test)  # Firestore rules (needs Java 21+)
@@ -108,12 +93,10 @@ flutter test integration_test/app_test.dart -d <device-id>   # 10 e2e scenarios 
 
 ## Known limitations
 
-* **On-device AI on Android** needs a Gemini Nano–eligible device (Pixel 6+, Samsung S24-series, etc.). Verified architecture; not tested on eligible hardware in this build cycle. The app falls back gracefully to Cloud AI → Basic mode.
-* **iOS hybrid inference** (Apple Foundation Models) needs an Apple Intelligence device on iOS 26+. Builds on simulator; on-device path not verified on physical hardware.
-* **Kirundi voice** depends on the device's speech engines and was not verified on a device with Kirundi TTS voices. Text and French-voice fallbacks are built in. Kirundi translations are a first draft pending native-speaker review.
-* **Simulated banking only.** No licensed bank integration exists. `BankRepository` is the seam for one.
-* **Firestore rules tests** require Java 21+ for the Firebase emulator; not run here.
-* Crashlytics and Analytics are not integrated yet (see docs/SECURITY.md and ROADMAP.md).
+* **Chrome on-device inference** requires eligible desktop Chrome with the local model ready. [Firebase setup requirements](https://firebase.google.com/docs/ai-logic/hybrid/web/get-started)
+* **Android and iOS** have hybrid inference implementations that still need testing on eligible physical devices.
+* **Kirundi speech** depends on the device's speech engines. The user can switch to French voice or continue by typing. Kirundi translations are pending fluent-speaker review.
+* **Banking** uses a simulated bank or a Firebase sandbox. A real bank integration and server-verifiable transfer approval are future work. [Security notes](docs/SECURITY.md)
 
 ## Documentation
 

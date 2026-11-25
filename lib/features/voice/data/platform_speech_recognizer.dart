@@ -8,21 +8,28 @@ import 'package:speech_to_text/speech_to_text.dart';
 import '../../../core/l10n/app_language.dart';
 import '../domain/speech_recognizer.dart';
 
-/// speech_to_text adapter (Android SpeechRecognizer / iOS SFSpeechRecognizer /
-/// Web Speech API). Language availability is whatever the device's engine
-/// reports — Kirundi is detected, never assumed.
+SpeechRecognizer createSpeechRecognizer() => PlatformSpeechRecognizer();
+
+/// Native speech_to_text adapter. Locale availability is reported by the engine.
 final class PlatformSpeechRecognizer implements SpeechRecognizer {
-  PlatformSpeechRecognizer([SpeechToText? stt]) : _stt = stt ?? SpeechToText();
+  PlatformSpeechRecognizer({
+    SpeechToText? engine,
+    Future<bool> Function()? requestMicrophone,
+  }) : _stt = engine ?? SpeechToText(),
+       _requestMicrophone = requestMicrophone ?? _requestPlatformMicrophone;
 
   final SpeechToText _stt;
+  final Future<bool> Function() _requestMicrophone;
   StreamController<RecognitionEvent>? _active;
   bool _ready = false;
+
+  static Future<bool> _requestPlatformMicrophone() async =>
+      (await Permission.microphone.request()).isGranted;
 
   @override
   Future<bool> initialize() async {
     if (_ready) return true;
-    final mic = await Permission.microphone.request();
-    if (!mic.isGranted) return false;
+    if (!await _requestMicrophone()) return false;
     _ready = await _stt.initialize(onError: _onError, onStatus: _onStatus);
     return _ready;
   }
@@ -30,16 +37,35 @@ final class PlatformSpeechRecognizer implements SpeechRecognizer {
   @override
   Future<RecognitionLocale> resolveLocale(AppLanguage language) async {
     if (!await initialize()) {
-      return RecognitionLocale(requested: language, localeId: null, isExactMatch: false);
+      return RecognitionLocale(
+        requested: language,
+        localeId: null,
+        isExactMatch: false,
+      );
     }
     final available = (await _stt.locales()).map((l) => l.localeId).toList();
     String norm(String s) => s.replaceAll('-', '_').toLowerCase();
     for (final candidate in language.speechLocaleCandidates) {
-      final hit = available.where((a) => norm(a) == norm(candidate)).firstOrNull ??
-          (candidate.contains('_') ? null : available.where((a) => norm(a).startsWith('${norm(candidate)}_')).firstOrNull);
-      if (hit != null) return RecognitionLocale(requested: language, localeId: hit, isExactMatch: true);
+      final hit =
+          available.where((a) => norm(a) == norm(candidate)).firstOrNull ??
+          (candidate.contains('_')
+              ? null
+              : available
+                    .where((a) => norm(a).startsWith('${norm(candidate)}_'))
+                    .firstOrNull);
+      if (hit != null) {
+        return RecognitionLocale(
+          requested: language,
+          localeId: hit,
+          isExactMatch: true,
+        );
+      }
     }
-    return RecognitionLocale(requested: language, localeId: null, isExactMatch: false);
+    return RecognitionLocale(
+      requested: language,
+      localeId: null,
+      isExactMatch: false,
+    );
   }
 
   @override
@@ -50,23 +76,40 @@ final class PlatformSpeechRecognizer implements SpeechRecognizer {
   }) {
     final c = StreamController<RecognitionEvent>();
     _active = c;
-    () async {
-      if (!await initialize()) {
-        c.add(const RecognitionError(RecognitionErrorKind.permissionDenied));
-        await c.close();
+    unawaited(_start(c, localeId, maxDuration, silenceTimeout));
+    return c.stream;
+  }
+
+  Future<void> _start(
+    StreamController<RecognitionEvent> session,
+    String localeId,
+    Duration maxDuration,
+    Duration silenceTimeout,
+  ) async {
+    try {
+      final ready = await initialize();
+      if (session.isClosed) return;
+      if (!ready) {
+        _finish(
+          session,
+          const RecognitionError(RecognitionErrorKind.permissionDenied),
+        );
         return;
       }
       await _stt.listen(
-        onResult: (SpeechRecognitionResult r) {
-          if (c.isClosed) return;
-          if (r.finalResult) {
-            c.add(r.recognizedWords.trim().isEmpty
-                ? const RecognitionError(RecognitionErrorKind.noMatch)
-                : RecognitionFinal(r.recognizedWords));
-            c.close();
-          } else {
-            c.add(RecognitionPartial(r.recognizedWords));
+        onResult: (SpeechRecognitionResult result) {
+          if (session.isClosed) return;
+          if (!result.finalResult) {
+            session.add(RecognitionPartial(result.recognizedWords));
+            return;
           }
+          final text = result.recognizedWords.trim();
+          _finish(
+            session,
+            text.isEmpty
+                ? const RecognitionError(RecognitionErrorKind.noMatch)
+                : RecognitionFinal(text),
+          );
         },
         listenOptions: SpeechListenOptions(
           localeId: localeId,
@@ -77,22 +120,46 @@ final class PlatformSpeechRecognizer implements SpeechRecognizer {
           listenMode: ListenMode.confirmation,
         ),
       );
-    }();
-    return c.stream;
+    } catch (_) {
+      _finish(
+        session,
+        const RecognitionError(RecognitionErrorKind.unavailable),
+      );
+    }
+  }
+
+  void _finish(
+    StreamController<RecognitionEvent> session,
+    RecognitionEvent event,
+  ) {
+    if (session.isClosed) return;
+    session.add(event);
+    unawaited(session.close());
   }
 
   void _onError(SpeechRecognitionError e) {
     final c = _active;
     if (c == null || c.isClosed) return;
     final kind = switch (e.errorMsg) {
-      'error_no_match' || 'error_speech_timeout' => RecognitionErrorKind.noMatch,
-      'error_network' || 'error_network_timeout' || 'error_server' => RecognitionErrorKind.network,
-      'error_language_not_supported' || 'error_language_unavailable' => RecognitionErrorKind.languageUnsupported,
-      'error_permission' || 'error_insufficient_permissions' => RecognitionErrorKind.permissionDenied,
+      'error_no_match' ||
+      'error_speech_timeout' ||
+      'no-speech' => RecognitionErrorKind.noMatch,
+      'error_network' ||
+      'error_network_timeout' ||
+      'error_server' ||
+      'network' => RecognitionErrorKind.network,
+      'error_language_not_supported' ||
+      'error_language_unavailable' ||
+      'language-not-supported' ||
+      'language-unavailable' => RecognitionErrorKind.languageUnsupported,
+      'error_permission' ||
+      'error_insufficient_permissions' ||
+      'not-allowed' => RecognitionErrorKind.permissionDenied,
+      'service-not-allowed' ||
+      'audio-capture' => RecognitionErrorKind.unavailable,
       _ => RecognitionErrorKind.unknown,
     };
-    c.add(RecognitionError(kind, e.errorMsg));
-    c.close();
+    _finish(c, RecognitionError(kind, e.errorMsg));
   }
 
   void _onStatus(String status) {
@@ -100,10 +167,7 @@ final class PlatformSpeechRecognizer implements SpeechRecognizer {
     final c = _active;
     if (status == SpeechToText.doneStatus && c != null && !c.isClosed) {
       Future<void>.delayed(const Duration(milliseconds: 400), () {
-        if (!c.isClosed) {
-          c.add(const RecognitionError(RecognitionErrorKind.noMatch));
-          c.close();
-        }
+        _finish(c, const RecognitionError(RecognitionErrorKind.noMatch));
       });
     }
   }

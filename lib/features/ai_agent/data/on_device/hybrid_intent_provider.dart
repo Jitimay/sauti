@@ -51,50 +51,68 @@ final class HybridIntentProvider implements AiProvider, LanguageAwareProvider {
   AiProviderKind get kind => AiProviderKind.onDeviceLlm;
 
   @override
-  Future<bool> isAvailable() async => (await _route(AppLanguage.english)) != null;
+  Future<bool> isAvailable() async =>
+      (await _route(AppLanguage.english)) != null;
 
   @override
-  Future<bool> isAvailableFor(AppLanguage language) async => (await _route(language)) != null;
+  Future<bool> isAvailableFor(AppLanguage language) async =>
+      (await _route(language)) != null;
 
   @override
   Future<AiCapabilities> getCapabilities() async => const AiCapabilities(
-        kind: AiProviderKind.onDeviceLlm,
-        toolCalling: false,
-        freeformConversation: false,
-        worksOffline: true,
-        languages: {AppLanguage.english, AppLanguage.french, AppLanguage.kirundi},
-      );
+    kind: AiProviderKind.onDeviceLlm,
+    toolCalling: false,
+    freeformConversation: false,
+    worksOffline: true,
+    languages: {AppLanguage.english, AppLanguage.french, AppLanguage.kirundi},
+  );
 
   Future<({bool onDevice, bool cloud})?> _route(AppLanguage language) async {
+    if (!onDeviceLanguages.contains(language)) return null;
     final status = await _client.status(languageCode: language.code);
-    final onDevice = status.onDeviceState == OnDeviceState.available && onDeviceLanguages.contains(language);
-    if (!onDevice) {
-      // Without Gemini Nano, the full cloud agent (function calling) or basic
-      // mode answers instead; this provider is the on-device tier.
-      return null;
-    }
-    // Cloud Gemini only as an in-SDK fallback for a failed on-device call.
-    return (onDevice: true, cloud: status.cloudAvailable && await _cloudAllowed());
+    final onDeviceReady =
+        status.onDeviceState == OnDeviceState.available &&
+        status.onDeviceSupportsLanguage;
+    final cloud = status.cloudAvailable && await _cloudAllowed();
+    if (!onDeviceReady && !cloud) return null;
+
+    // Preserve SDK-managed fallback when the local model is absent. For
+    // languages without local validation, the full cloud agent handles routing.
+    return (onDevice: status.onDeviceSupportsLanguage, cloud: cloud);
   }
 
   @override
   Future<AiResponse> generateResponse(AiRequest request) async {
     final execute = request.executeTool;
     if (execute == null) {
-      throw const AiProviderException(AiErrorKind.unavailable, 'hybrid intent provider needs a tool executor');
+      throw const AiProviderException(
+        AiErrorKind.unavailable,
+        'hybrid intent provider needs a tool executor',
+      );
     }
     final route = await _route(request.language);
-    if (route == null) throw const AiProviderException(AiErrorKind.unavailable, 'no inference path');
+    if (route == null) {
+      throw const AiProviderException(
+        AiErrorKind.unavailable,
+        'no inference path',
+      );
+    }
 
-    final lastUser = request.turns.lastWhere((t) => t is UserTurn) as UserTurn;
-    final previous = request.turns.reversed.whereType<AssistantTurn>().firstOrNull?.text;
+    final userTurns = request.turns.whereType<UserTurn>().toList();
+    final lastUser = userTurns.last;
+    final previous = userTurns.length > 1
+        ? userTurns[userTurns.length - 2].text
+        : null;
 
     final HybridJsonResult result;
     try {
       result = await _client
           .generateJson(
             instructions: IntentSchema.instructions(request.language),
-            prompt: IntentSchema.prompt(lastUser.text, previousReply: previous),
+            prompt: IntentSchema.prompt(
+              lastUser.text,
+              previousRequest: previous,
+            ),
             schema: IntentSchema.jsonSchema,
             allowOnDevice: route.onDevice,
             allowCloud: route.cloud,
@@ -102,9 +120,15 @@ final class HybridIntentProvider implements AiProvider, LanguageAwareProvider {
           )
           .timeout(timeout);
     } on TimeoutException {
-      throw const AiProviderException(AiErrorKind.timeout, 'intent model timed out');
+      throw const AiProviderException(
+        AiErrorKind.timeout,
+        'intent model timed out',
+      );
     } on HybridAiException catch (e) {
-      throw AiProviderException(_errorKind(e.code), '${e.code}: ${e.message ?? ''}');
+      throw AiProviderException(
+        _errorKind(e.code),
+        '${e.code}: ${e.message ?? ''}',
+      );
     }
 
     var intent = IntentSchema.toIntent(result.json, userText: lastUser.text);
@@ -115,22 +139,44 @@ final class HybridIntentProvider implements AiProvider, LanguageAwareProvider {
       if (keyword.type != IntentType.unknown) intent = keyword;
     }
 
+    if (intent.type == IntentType.unknown &&
+        result.source == HybridSource.cloud) {
+      throw const AiProviderException(
+        AiErrorKind.invalidResponse,
+        'no supported banking intent',
+      );
+    }
+
     final agent = IntentAgent(now: _now);
     final phrases = AgentPhrasebook.of(request.language);
-    final servedBy = result.source == HybridSource.cloud ? AiProviderKind.cloud : AiProviderKind.onDeviceLlm;
+    final servedBy = result.source == HybridSource.cloud
+        ? AiProviderKind.cloud
+        : AiProviderKind.onDeviceLlm;
     final calls = agent.callsFor(intent);
     if (calls == null) {
-      return AiTextResponse(agent.direct(intent, phrases), servedBy: servedBy, renderedFromTools: true);
+      return AiTextResponse(
+        agent.direct(intent, phrases),
+        servedBy: servedBy,
+        renderedFromTools: true,
+      );
     }
-    final records = <ToolExecutionRecord>[for (final c in calls) await execute(c)];
-    return AiTextResponse(agent.compose(intent, records, phrases), servedBy: servedBy, renderedFromTools: true);
+    final records = <ToolExecutionRecord>[
+      for (final c in calls) await execute(c),
+    ];
+    return AiTextResponse(
+      agent.compose(intent, records, phrases),
+      servedBy: servedBy,
+      renderedFromTools: true,
+    );
   }
 
   static AiErrorKind _errorKind(String code) => switch (code) {
-        'unavailable' || 'unsupportedLanguage' || 'network' => AiErrorKind.unavailable,
-        'quota' => AiErrorKind.quota,
-        'blocked' => AiErrorKind.blocked,
-        'invalidResponse' || 'contextTooLarge' => AiErrorKind.invalidResponse,
-        _ => AiErrorKind.unknown,
-      };
+    'unavailable' ||
+    'unsupportedLanguage' ||
+    'network' => AiErrorKind.unavailable,
+    'quota' => AiErrorKind.quota,
+    'blocked' => AiErrorKind.blocked,
+    'invalidResponse' || 'contextTooLarge' => AiErrorKind.invalidResponse,
+    _ => AiErrorKind.unknown,
+  };
 }

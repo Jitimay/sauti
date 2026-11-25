@@ -78,12 +78,12 @@ void main() {
     expect(device.spoken, ['Hello', 'Amahoro']);
   });
 
-  test('errors and timeouts fall back to the device voice', () async {
+  test('Gemini errors and timeouts surface without playing device speech', () async {
     generate = (_) async => throw Exception('quota');
-    await build().speak('One', language: AppLanguage.french, rate: 0.5);
+    await expectLater(build().speak('One', language: AppLanguage.french, rate: 0.5), throwsStateError);
     generate = (_) => Completer<SpeechAudio?>().future; // never answers
-    await build().speak('Two', language: AppLanguage.english, rate: 0.5);
-    expect(device.spoken, ['One', 'Two']);
+    await expectLater(build().speak('Two', language: AppLanguage.english, rate: 0.5), throwsStateError);
+    expect(device.spoken, isEmpty);
   });
 
   test('repeat is served from cache; pace follows the speech-rate setting', () async {
@@ -96,19 +96,19 @@ void main() {
     expect(NaturalSpeechSynthesizer.prompt('x', language: AppLanguage.french, rate: 0.9), contains('in French'));
   });
 
-  test('a failure pauses the cloud voice: the next replies use the device voice at once', () async {
+  test('a failure pauses the cloud voice: the next replies stay quiet', () async {
     final s = build();
     generate = (_) async => throw Exception('App Check token is invalid');
-    await s.speak('First', language: AppLanguage.english, rate: 0.5);
+    await expectLater(s.speak('First', language: AppLanguage.english, rate: 0.5), throwsStateError);
     generate = (_) async => pcm;
-    await s.speak('Second', language: AppLanguage.english, rate: 0.5);
+    await expectLater(s.speak('Second', language: AppLanguage.english, rate: 0.5), throwsStateError);
     expect(prompts, hasLength(1), reason: 'no second cloud attempt during the cooldown');
-    expect(device.spoken, ['First', 'Second']);
+    expect(device.spoken, isEmpty);
   });
 
-  test('broken audio playback never leaves the user without speech', () async {
+  test('broken Gemini playback surfaces without playing device speech', () async {
     player.broken = true;
-    await build().speak('Hello', language: AppLanguage.english, rate: 0.5);
-    expect(device.spoken, ['Hello']);
+    await expectLater(build().speak('Hello', language: AppLanguage.english, rate: 0.5), throwsStateError);
+    expect(device.spoken, isEmpty);
   });
 }

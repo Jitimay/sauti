@@ -37,7 +37,12 @@ final class _RecognitionReceived extends VoiceEvent {
 }
 
 final class SpeechPlaybackStarted extends VoiceEvent {
-  const SpeechPlaybackStarted(this.text, {required this.language, required this.rate, this.private = false});
+  const SpeechPlaybackStarted(
+    this.text, {
+    required this.language,
+    required this.rate,
+    this.private = false,
+  });
   final String text;
   final AppLanguage language;
   final double rate;
@@ -100,31 +105,54 @@ final class VoiceState extends Equatable {
     AppLanguage? Function()? unsupportedLanguage,
     AppLanguage? Function()? ttsUnavailableFor,
     String? lastSpoken,
-  }) =>
-      VoiceState(
-        status: status ?? this.status,
-        partial: partial ?? this.partial,
-        recognized: recognized ?? this.recognized,
-        error: error != null ? error() : this.error,
-        unsupportedLanguage: unsupportedLanguage != null ? unsupportedLanguage() : this.unsupportedLanguage,
-        ttsUnavailableFor: ttsUnavailableFor != null ? ttsUnavailableFor() : this.ttsUnavailableFor,
-        lastSpoken: lastSpoken ?? this.lastSpoken,
-      );
+  }) => VoiceState(
+    status: status ?? this.status,
+    partial: partial ?? this.partial,
+    recognized: recognized ?? this.recognized,
+    error: error != null ? error() : this.error,
+    unsupportedLanguage: unsupportedLanguage != null
+        ? unsupportedLanguage()
+        : this.unsupportedLanguage,
+    ttsUnavailableFor: ttsUnavailableFor != null
+        ? ttsUnavailableFor()
+        : this.ttsUnavailableFor,
+    lastSpoken: lastSpoken ?? this.lastSpoken,
+  );
 
   @override
-  List<Object?> get props => [status, partial, recognized, error, unsupportedLanguage, ttsUnavailableFor, lastSpoken];
+  List<Object?> get props => [
+    status,
+    partial,
+    recognized,
+    error,
+    unsupportedLanguage,
+    ttsUnavailableFor,
+    lastSpoken,
+  ];
 }
 
 /// Speech-to-text and text-to-speech state. Independent of the AI agent.
 final class VoiceBloc extends Bloc<VoiceEvent, VoiceState> {
-  VoiceBloc(this._stt, this._tts, {this.maxListen = const Duration(seconds: 15)}) : super(const VoiceState()) {
+  VoiceBloc(
+    this._stt,
+    this._tts, {
+    this.maxListen = const Duration(seconds: 15),
+  }) : super(const VoiceState()) {
     on<VoiceListeningStarted>(_onStart, transformer: droppable());
     on<VoiceListeningStopped>(_onStop);
     on<_RecognitionReceived>(_onRecognition);
     on<SpeechPlaybackStarted>(_onSpeak, transformer: restartable());
     on<SpeechPlaybackStopped>(_onStopSpeaking);
-    on<VoiceErrorDismissed>((e, emit) => emit(state.copyWith(
-        status: VoiceStatus.idle, error: () => null, unsupportedLanguage: () => null, ttsUnavailableFor: () => null)));
+    on<VoiceErrorDismissed>(
+      (e, emit) => emit(
+        state.copyWith(
+          status: VoiceStatus.idle,
+          error: () => null,
+          unsupportedLanguage: () => null,
+          ttsUnavailableFor: () => null,
+        ),
+      ),
+    );
   }
 
   final SpeechRecognizer _stt;
@@ -134,27 +162,64 @@ final class VoiceBloc extends Bloc<VoiceEvent, VoiceState> {
   int _seq = 0;
   AppLanguage _listeningLanguage = AppLanguage.english;
 
-  Future<void> _onStart(VoiceListeningStarted e, Emitter<VoiceState> emit) async {
+  Future<void> _onStart(
+    VoiceListeningStarted e,
+    Emitter<VoiceState> emit,
+  ) async {
     if (state.status == VoiceStatus.listening) return;
-    await _tts.stop(); // barge-in: user speaking interrupts playback
-    emit(state.copyWith(status: VoiceStatus.preparing, partial: '', error: () => null, unsupportedLanguage: () => null));
+    emit(
+      state.copyWith(
+        status: VoiceStatus.preparing,
+        partial: '',
+        error: () => null,
+        unsupportedLanguage: () => null,
+      ),
+    );
 
-    if (!await _stt.initialize()) {
-      return emit(state.copyWith(status: VoiceStatus.error, error: () => RecognitionErrorKind.permissionDenied));
-    }
     final lang = e.overrideLanguage ?? e.language;
-    final locale = await _stt.resolveLocale(lang);
+    final RecognitionLocale locale;
+    try {
+      await _tts.stop();
+      if (state.status != VoiceStatus.preparing) return;
+      final ready = await _stt.initialize();
+      if (state.status != VoiceStatus.preparing) return;
+      if (!ready) {
+        return emit(
+          state.copyWith(
+            status: VoiceStatus.error,
+            error: () => RecognitionErrorKind.permissionDenied,
+          ),
+        );
+      }
+      locale = await _stt.resolveLocale(lang);
+    } catch (_) {
+      if (state.status != VoiceStatus.preparing) return;
+      return emit(
+        state.copyWith(
+          status: VoiceStatus.error,
+          error: () => RecognitionErrorKind.unavailable,
+        ),
+      );
+    }
+    if (state.status != VoiceStatus.preparing) return;
     if (!locale.supported) {
-      return emit(state.copyWith(
-        status: VoiceStatus.error,
-        error: () => RecognitionErrorKind.languageUnsupported,
-        unsupportedLanguage: () => lang,
-      ));
+      return emit(
+        state.copyWith(
+          status: VoiceStatus.error,
+          error: () => RecognitionErrorKind.languageUnsupported,
+          unsupportedLanguage: () => lang,
+        ),
+      );
     }
     _listeningLanguage = lang;
     emit(state.copyWith(status: VoiceStatus.listening));
     await _sub?.cancel();
-    _sub = _stt.listen(localeId: locale.localeId!, maxDuration: maxListen).listen((ev) => add(_RecognitionReceived(ev)));
+    _sub = _stt
+        .listen(localeId: locale.localeId!, maxDuration: maxListen)
+        .listen(
+          (ev) => add(_RecognitionReceived(ev)),
+          onDone: () => _sub = null,
+        );
   }
 
   void _onRecognition(_RecognitionReceived e, Emitter<VoiceState> emit) {
@@ -163,39 +228,83 @@ final class VoiceBloc extends Bloc<VoiceEvent, VoiceState> {
       case RecognitionPartial(:final text):
         emit(state.copyWith(partial: text));
       case RecognitionFinal(:final text):
-        emit(state.copyWith(
-          status: VoiceStatus.idle,
-          partial: '',
-          recognized: RecognizedUtterance(++_seq, text, _listeningLanguage),
-        ));
+        emit(
+          state.copyWith(
+            status: VoiceStatus.idle,
+            partial: '',
+            recognized: RecognizedUtterance(++_seq, text, _listeningLanguage),
+          ),
+        );
       case RecognitionError(:final kind):
-        emit(state.copyWith(status: VoiceStatus.error, partial: '', error: () => kind));
+        emit(
+          state.copyWith(
+            status: VoiceStatus.error,
+            partial: '',
+            error: () => kind,
+            unsupportedLanguage: () =>
+                kind == RecognitionErrorKind.languageUnsupported
+                ? _listeningLanguage
+                : null,
+          ),
+        );
     }
   }
 
-  Future<void> _onStop(VoiceListeningStopped e, Emitter<VoiceState> emit) async {
-    if (state.status != VoiceStatus.listening && state.status != VoiceStatus.preparing) return;
+  Future<void> _onStop(
+    VoiceListeningStopped e,
+    Emitter<VoiceState> emit,
+  ) async {
+    if (state.status == VoiceStatus.preparing) {
+      emit(state.copyWith(status: VoiceStatus.idle));
+      return;
+    }
+    if (state.status != VoiceStatus.listening) return;
     // stop() lets the engine deliver a final result for what was said.
     await _stt.stop();
   }
 
-  Future<void> _onSpeak(SpeechPlaybackStarted e, Emitter<VoiceState> emit) async {
-    if (state.status == VoiceStatus.listening) return; // never talk over the user
-    if (!await _tts.supports(e.language)) {
-      return emit(state.copyWith(ttsUnavailableFor: () => e.language, lastSpoken: e.text));
+  Future<void> _onSpeak(
+    SpeechPlaybackStarted e,
+    Emitter<VoiceState> emit,
+  ) async {
+    if (state.status == VoiceStatus.listening) {
+      return; // never talk over the user
     }
-    emit(state.copyWith(status: VoiceStatus.speaking, lastSpoken: e.text, ttsUnavailableFor: () => null));
+    if (!await _tts.supports(e.language)) {
+      return emit(
+        state.copyWith(ttsUnavailableFor: () => e.language, lastSpoken: e.text),
+      );
+    }
+    emit(
+      state.copyWith(
+        status: VoiceStatus.speaking,
+        lastSpoken: e.text,
+        ttsUnavailableFor: () => null,
+      ),
+    );
     try {
-      await _tts.speak(e.text, language: e.language, rate: e.rate, private: e.private);
+      await _tts.speak(
+        e.text,
+        language: e.language,
+        rate: e.rate,
+        private: e.private,
+      );
     } catch (_) {
       emit(state.copyWith(ttsUnavailableFor: () => e.language));
     }
-    if (state.status == VoiceStatus.speaking) emit(state.copyWith(status: VoiceStatus.idle));
+    if (state.status == VoiceStatus.speaking) {
+      emit(state.copyWith(status: VoiceStatus.idle));
+    }
   }
 
-  Future<void> _onStopSpeaking(SpeechPlaybackStopped e, Emitter<VoiceState> emit) async {
+  Future<void> _onStopSpeaking(
+    SpeechPlaybackStopped e,
+    Emitter<VoiceState> emit,
+  ) async {
     await _tts.stop();
-    if (state.status == VoiceStatus.speaking) emit(state.copyWith(status: VoiceStatus.idle));
+    if (state.status == VoiceStatus.speaking) {
+      emit(state.copyWith(status: VoiceStatus.idle));
+    }
   }
 
   @override

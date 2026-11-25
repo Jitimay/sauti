@@ -7,115 +7,201 @@ import '../../../../core/widgets/status_banners.dart';
 import '../../../banking/domain/entities/account.dart';
 import '../../../banking/domain/entities/data_freshness.dart';
 
-/// The hero: available balance, large and calm, on deep navy with the Sauti
-/// "sound rings" drawn faintly in the corner.
-class BalanceCard extends StatelessWidget {
-  const BalanceCard({super.key, required this.account, required this.fresh, this.onTap});
+/// Shows the available balance and when the underlying data was last synced.
+class BalanceCard extends StatefulWidget {
+  const BalanceCard({
+    super.key,
+    required this.account,
+    required this.fresh,
+    this.onTap,
+  });
+
   final Account account;
   final Fresh<Object?> fresh;
   final VoidCallback? onTap;
 
   @override
+  State<BalanceCard> createState() => _BalanceCardState();
+}
+
+class _BalanceCardState extends State<BalanceCard> {
+  bool _hidden = false;
+
+  @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final st = StatusColors.of(context);
-    final hc = st.isHighContrast;
+    final status = StatusColors.of(context);
+    final highContrast = status.isHighContrast;
     final text = Theme.of(context).textTheme;
-    final spoken = MoneyFormatter.spoken(account.availableBalance, locale: context.langCode);
-    final soft = Colors.white.withValues(alpha: 0.78);
-    return Semantics(
-      container: true,
-      button: onTap != null,
-      label: '${l.availableBalance}: $spoken. ${account.name} ${account.maskedNumber}. '
-          '${fresh.isCached ? l.cachedAt(hhmm(fresh.asOf)) : l.liveData}',
-      excludeSemantics: true,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(Radii.xl),
-          color: hc ? Colors.black : null,
-          gradient: hc
-              ? null
-              : const LinearGradient(
+    final account = widget.account;
+    final toggleLabel = _hidden ? l.showBalance : l.hideBalance;
+    final freshness = widget.fresh.isCached
+        ? l.cachedAt(hhmm(widget.fresh.asOf))
+        : l.liveData;
+    final balanceLabel = [
+      if (!_hidden)
+        '${l.availableBalance}: ${MoneyFormatter.spoken(account.availableBalance, locale: context.langCode)}.',
+      '${account.name} ${account.maskedNumber}.',
+      freshness,
+    ].join(' ');
+
+    final supporting = highContrast ? Colors.white : const Color(0xFFDCE7FF);
+    final rule = highContrast ? status.line : const Color(0xFF526991);
+    final radius = BorderRadius.circular(Radii.xl);
+
+    return Material(
+      color: highContrast ? Colors.black : const Color(0xFF152953),
+      shape: RoundedRectangleBorder(
+        borderRadius: radius,
+        side: highContrast
+            ? BorderSide(color: status.accent, width: 2)
+            : BorderSide.none,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Ink(
+        decoration: highContrast
+            ? null
+            : const BoxDecoration(
+                gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [AppColors.navyLight, AppColors.navy, AppColors.navyDeep],
-                  stops: [0, 0.55, 1],
+                  colors: [Color(0xFF132344), Color(0xFF204686)],
                 ),
-          border: hc ? Border.all(color: st.accent, width: 2) : null,
-          boxShadow: hc
-              ? null
-              : const [BoxShadow(color: Color(0x290F2A4A), blurRadius: 24, offset: Offset(0, 10), spreadRadius: -6)],
-        ),
-        child: Material(
-          type: MaterialType.transparency,
+              ),
+        child: CustomPaint(
+          painter: highContrast ? null : const _BalanceRings(),
           child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(Radii.xl),
-            child: Stack(children: [
-              if (!hc)
-                Positioned(
-                  right: -84,
-                  top: -84,
-                  child: CustomPaint(size: const Size(220, 220), painter: _RingsPainter(accent: st.accent)),
-                ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 22, 24, 22),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
+            onTap: widget.onTap,
+            excludeFromSemantics: true,
+            borderRadius: radius,
+            splashColor: Colors.white.withValues(alpha: 0.12),
+            highlightColor: Colors.white.withValues(alpha: 0.08),
+            focusColor: Colors.white.withValues(alpha: 0.15),
+            hoverColor: Colors.white.withValues(alpha: 0.04),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Text(l.availableBalance, style: text.titleSmall?.copyWith(color: soft)),
-                      FreshnessBadge(fresh, onDark: true),
+                      Expanded(
+                        child: ExcludeSemantics(
+                          child: Text(
+                            l.availableBalance,
+                            style: text.bodyMedium?.copyWith(
+                              color: supporting,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Semantics(
+                        container: true,
+                        button: true,
+                        label: toggleLabel,
+                        excludeSemantics: true,
+                        onTap: _toggleVisibility,
+                        child: IconButton(
+                          tooltip: toggleLabel,
+                          icon: Icon(
+                            _hidden
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                          ),
+                          style: IconButton.styleFrom(
+                            foregroundColor: highContrast
+                                ? status.accent
+                                : Colors.white,
+                            backgroundColor: highContrast
+                                ? Colors.black
+                                : const Color(0xFF294674),
+                            side: BorderSide(
+                              color: highContrast ? status.accent : rule,
+                            ),
+                          ),
+                          onPressed: _toggleVisibility,
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 14),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      context.money(account.availableBalance),
-                      style: text.displayMedium?.copyWith(color: Colors.white),
+                  Semantics(
+                    container: true,
+                    button: widget.onTap != null,
+                    label: balanceLabel,
+                    excludeSemantics: true,
+                    onTap: widget.onTap,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _hidden
+                              ? '••••••'
+                              : context.money(account.availableBalance),
+                          style: text.displaySmall?.copyWith(
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        FreshnessBadge(widget.fresh, onDark: true),
+                        const SizedBox(height: 16),
+                        Divider(height: 1, color: rule),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.credit_card_rounded,
+                              size: 18,
+                              color: supporting,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                '${account.name} · ${account.maskedNumber}',
+                                style: text.bodySmall?.copyWith(
+                                  color: supporting,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            if (widget.onTap != null)
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                size: 20,
+                                color: supporting,
+                              ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 18),
-                  Row(children: [
-                    Icon(Icons.account_balance_rounded, size: 18, color: soft),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text('${account.name} · ${account.maskedNumber}',
-                          style: text.bodyMedium?.copyWith(color: soft, fontWeight: FontWeight.w600)),
-                    ),
-                    if (onTap != null) Icon(Icons.chevron_right_rounded, color: soft),
-                  ]),
-                ]),
+                ],
               ),
-            ]),
+            ),
           ),
         ),
       ),
     );
   }
+
+  void _toggleVisibility() => setState(() => _hidden = !_hidden);
 }
 
-class _RingsPainter extends CustomPainter {
-  _RingsPainter({required this.accent});
-  final Color accent;
+class _BalanceRings extends CustomPainter {
+  const _BalanceRings();
 
   @override
   void paint(Canvas canvas, Size size) {
-    final c = size.center(Offset.zero);
-    final r = size.shortestSide / 2;
-    final ring = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 14;
-    for (final (f, a) in [(0.95, 0.05), (0.68, 0.07), (0.42, 0.09)]) {
-      canvas.drawCircle(c, r * f, ring..color = Colors.white.withValues(alpha: a));
+    final center = Offset(size.width + 12, 10);
+    final paint = Paint()
+      ..color = const Color(0x2475A8FF)
+      ..style = PaintingStyle.stroke;
+    for (final radius in [52.0, 82.0, 114.0, 148.0]) {
+      canvas.drawCircle(center, radius, paint);
     }
-    canvas.drawCircle(c, r * 0.16, Paint()..color = accent.withValues(alpha: 0.9));
   }
 
   @override
-  bool shouldRepaint(_RingsPainter old) => old.accent != accent;
+  bool shouldRepaint(_BalanceRings oldDelegate) => false;
 }

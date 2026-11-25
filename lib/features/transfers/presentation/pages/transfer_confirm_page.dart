@@ -115,6 +115,12 @@ class _TransferConfirmPageState extends State<TransferConfirmPage> {
       onPressed: s.stage == TransferStage.submitting ? null : () => bloc.add(const TransferCancelled()),
       icon: const Icon(Icons.close_rounded),
       label: Text(l.cancelTransfer),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: const Color(0xFF64748B),
+        side: const BorderSide(color: Color(0xFFCBD5E1)),
+        minimumSize: const Size.fromHeight(50),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+      ),
     );
 
     if (s.stage == TransferStage.failed) {
@@ -190,11 +196,16 @@ class _TransferConfirmPageState extends State<TransferConfirmPage> {
         )
       else
         FilledButton.icon(
-          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(64)),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(56),
+            backgroundColor: verified ? AppColors.accentGreen : null,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          ),
           // Disabled until verified: authentication alone never sends money.
           onPressed: verified ? () => bloc.add(const TransferSubmitted()) : null,
           icon: const Icon(Icons.send_rounded),
-          label: Text(l.sendNow(context.money(d.amount))),
+          label: Text(l.sendNow(context.money(d.amount)), style: const TextStyle(fontWeight: FontWeight.w700)),
         ),
       const SizedBox(height: 12),
       cancel,

@@ -1,6 +1,17 @@
 # Sauti — Testing
 
-## Latest results (2026-11-17)
+## Chrome judge-build checks (November 24, 2026)
+
+| Check | Result |
+|---|---|
+| `flutter analyze --no-pub` | Passed without findings |
+| `flutter test --no-pub` | 183 passed, 6 screenshot tests skipped |
+| `npm test` in `firebase/functions` | 6 passed |
+| Firebase-configured web build | JavaScript build passed. The Wasm dry run reported dependency warnings. |
+| Hosted URL and repository | Both respond over HTTPS. GitHub reports a public Apache-2.0 repository. |
+| Final build on physical Chrome hardware | Record on-device and cloud inference, offline cache, and keyboard or screen-reader use before submission. See the [judge guide](DEMO_GUIDE.md). |
+
+## Earlier results (November 17, 2026)
 
 | Suite | Command | Result |
 |---|---|---|

@@ -16,7 +16,8 @@ final class PrefsSettingsRepository implements SettingsRepository {
     return AccessibilitySettings(
       textScale: (_p.getDouble('${_k}textScale') ?? d.textScale).clamp(1.0, 2.0),
       highContrast: _p.getBool('${_k}highContrast') ?? d.highContrast,
-      voiceFeedback: _p.getBool('${_k}voiceFeedback') ?? d.voiceFeedback,
+      // The former preference could be true by default, without consent.
+      voiceFeedbackChoice: _p.getBool('${_k}automaticVoiceFeedback'),
       speechRate: (_p.getDouble('${_k}speechRate') ?? d.speechRate).clamp(0.25, 1.0),
       interactionMode: InteractionMode.values
               .where((m) => m.name == _p.getString('${_k}interactionMode'))
@@ -30,7 +31,9 @@ final class PrefsSettingsRepository implements SettingsRepository {
   Future<void> saveAccessibility(AccessibilitySettings s) async {
     await _p.setDouble('${_k}textScale', s.textScale);
     await _p.setBool('${_k}highContrast', s.highContrast);
-    await _p.setBool('${_k}voiceFeedback', s.voiceFeedback);
+    if (s.voiceFeedbackChoice case final choice?) {
+      await _p.setBool('${_k}automaticVoiceFeedback', choice);
+    }
     await _p.setDouble('${_k}speechRate', s.speechRate);
     await _p.setString('${_k}interactionMode', s.interactionMode.name);
     await _p.setBool('${_k}reduceMotion', s.reduceMotion);

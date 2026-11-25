@@ -2,7 +2,16 @@ import 'package:equatable/equatable.dart';
 
 import '../../../core/l10n/app_language.dart';
 
-enum RecognitionErrorKind { permissionDenied, unavailable, languageUnsupported, noMatch, network, unknown }
+enum RecognitionErrorKind {
+  permissionDenied,
+  unavailable,
+  microphoneUnavailable,
+  serviceUnavailable,
+  languageUnsupported,
+  noMatch,
+  network,
+  unknown,
+}
 
 sealed class RecognitionEvent extends Equatable {
   const RecognitionEvent();
@@ -34,7 +43,11 @@ final class RecognitionError extends RecognitionEvent {
 
 /// Which locale the recognizer will actually use for a requested language.
 final class RecognitionLocale extends Equatable {
-  const RecognitionLocale({required this.requested, required this.localeId, required this.isExactMatch});
+  const RecognitionLocale({
+    required this.requested,
+    required this.localeId,
+    required this.isExactMatch,
+  });
 
   final AppLanguage requested;
 

@@ -84,6 +84,34 @@ void main() {
     expect(h.synthesizer.spoken.single, contains('250,000 BIF'));
   });
 
+  for (final allow in [true, false]) {
+    testWidgets('Asks before speaking and remembers voice output choice: $allow', (t) async {
+      await h.setUp();
+      h.recognizer.nextUtterance = 'How much money do I have?';
+      await h.pumpApp(t);
+      await t.tap(find.text('Assistant'));
+      await settle(t);
+      final microphone = find.bySemanticsLabel('Start speaking');
+
+      await t.tap(microphone);
+      await settle(t);
+      expect(find.text('Read replies aloud?'), findsOneWidget);
+      expect(h.synthesizer.spoken, isEmpty);
+      await t.tap(find.text(allow ? 'Allow spoken replies' : 'Keep replies quiet'));
+      await t.pumpAndSettle();
+      expect(h.synthesizer.spoken, hasLength(allow ? 1 : 0));
+
+      h.recognizer.nextUtterance = 'Show me my last transactions';
+      await t.tap(microphone);
+      for (var frame = 0; frame < 5; frame++) {
+        await t.pump(const Duration(milliseconds: 100));
+      }
+      expect(h.recognizer.sessions, 2);
+      expect(find.text('Read replies aloud?'), findsNothing);
+      expect(h.synthesizer.spoken, hasLength(allow ? 2 : 0));
+    });
+  }
+
   testWidgets('Kirundi voice unsupported → notice with French fallback', (t) async {
     await h.setUp(language: AppLanguage.kirundi);
     await h.pumpApp(t);
@@ -93,6 +121,25 @@ void main() {
     await settle(t);
     expect(find.textContaining('Ikirundi'), findsWidgets);
     expect(find.text("Koresha ijwi ry'igifaransa"), findsOneWidget);
+  });
+
+  testWidgets('Voice errors appear once and clear when continuing in text', (t) async {
+    h.recognizer.supported = {AppLanguage.french};
+    await h.setUp();
+    await h.pumpApp(t);
+    await t.tap(find.text('Assistant'));
+    await settle(t);
+    await t.tap(find.bySemanticsLabel('Start speaking'));
+    await settle(t);
+
+    expect(find.textContaining('Voice input in English'), findsOneWidget);
+    expect(find.text('Something went wrong. You can try again or type.'), findsNothing);
+    expect(find.text('Use French voice'), findsNothing);
+
+    await t.tap(find.text('“How much money do I have?”'));
+    await settle(t);
+    expect(find.textContaining('Voice input in English'), findsNothing);
+    expect(find.textContaining('250,000 BIF'), findsWidgets);
   });
 
   testWidgets('Scenarios 4 & 6: voice-free transfer via agent → authenticate → send → receipt', (t) async {
@@ -226,6 +273,25 @@ void main() {
     await h.pumpApp(t, size: const Size(360, 740));
     expect(t.takeException(), isNull);
     expect(find.textContaining('250,000'), findsOneWidget);
+  });
+
+  testWidgets('Navigation moves from a sidebar to the bottom without resetting the active screen', (t) async {
+    await h.setUp();
+    await h.pumpApp(t, size: const Size(1280, 800));
+    final assistant = find.text('Assistant');
+    expect(t.getCenter(assistant).dx, lessThan(224));
+
+    await t.tap(assistant);
+    await settle(t);
+    expect(find.text('Sauti assistant'), findsOneWidget);
+    await t.enterText(find.byType(TextField), 'How much money do I have?');
+
+    t.view.physicalSize = const Size(360, 800) * t.view.devicePixelRatio;
+    await settle(t);
+    expect(t.getCenter(assistant).dy, greaterThan(700));
+    expect(find.text('Sauti assistant'), findsOneWidget);
+    expect(find.text('How much money do I have?'), findsOneWidget);
+    expect(t.takeException(), isNull);
   });
 
   testWidgets('Touch targets meet Android tap-target guideline on key screens', (t) async {

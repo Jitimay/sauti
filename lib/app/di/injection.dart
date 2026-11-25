@@ -44,7 +44,8 @@ import '../../features/transfers/data/device_transfer_authenticator.dart';
 import '../../features/transfers/domain/repositories/transfer_authenticator.dart';
 import '../../features/transfers/domain/usecases/prepare_transfer.dart';
 import '../../features/transfers/domain/usecases/submit_transfer.dart';
-import '../../features/voice/data/platform_speech_recognizer.dart';
+import '../../features/voice/data/platform_speech_recognizer.dart'
+    if (dart.library.js_interop) '../../features/voice/data/web_speech_recognizer.dart';
 import '../../features/voice/data/natural_speech_synthesizer.dart';
 import '../../features/voice/data/platform_speech_synthesizer.dart';
 import '../../features/voice/domain/speech_recognizer.dart';
@@ -211,7 +212,7 @@ Future<void> configureDependencies({
 
   // ---- Voice ----
   sl
-    ..registerLazySingleton<SpeechRecognizer>(() => o.recognizer ?? PlatformSpeechRecognizer())
+    ..registerLazySingleton<SpeechRecognizer>(() => o.recognizer ?? createSpeechRecognizer())
     ..registerLazySingleton<SpeechSynthesizer>(() {
       if (o.synthesizer != null) return o.synthesizer!;
       final device = PlatformSpeechSynthesizer();

@@ -1,12 +1,10 @@
 import 'package:material_ui/material_ui.dart';
 
-/// Sauti palette — mockup redesign (Nov 2026).
-///
-/// Brighter "Africa tech" blue replaces deep navy. Green is the primary
-/// action colour. Amber is kept only for the DEMO banner.
+/// Sauti’s cobalt and navy identity, with separate semantic status colours.
 abstract final class AppColors {
   // Brand — primary blue
   static const blue = Color(0xFF1A56DB);
+  static const primaryBlue = blue;
   static const blueDeep = Color(0xFF1E3A8A);
   static const blueLight = Color(0xFF2563EB);
   static const blueTint = Color(0xFFEFF6FF);
@@ -20,6 +18,7 @@ abstract final class AppColors {
 
   // Accent — green (success, CTA)
   static const green = Color(0xFF16A34A);
+  static const accentGreen = green;
   static const greenSoft = Color(0xFFDCFCE7);
   static const greenDeep = Color(0xFF14532D);
 
@@ -29,18 +28,18 @@ abstract final class AppColors {
   static const amberDeep = Color(0xFF8A5300);
 
   // Neutrals
-  static const ink = Color(0xFF111827);
-  static const muted = Color(0xFF6B7280);
-  static const canvas = Color(0xFFF9FAFB);
+  static const ink = Color(0xFF142238);
+  static const muted = Color(0xFF526177);
+  static const canvas = Color(0xFFF5F7F8);
   static const surface = Color(0xFFFFFFFF);
-  static const sunken = Color(0xFFF3F4F6);
-  static const line = Color(0xFFE5E7EB);
-  static const outline = Color(0xFFD1D5DB);
+  static const sunken = Color(0xFFEBF0F4);
+  static const line = Color(0xFFDCE4EB);
+  static const outline = Color(0xFFB5C3D0);
 
   // Status
-  static const success = Color(0xFF16A34A);
+  static const success = Color(0xFF166534);
   static const successBg = Color(0xFFDCFCE7);
-  static const warning = Color(0xFFD97706);
+  static const warning = Color(0xFF92400E);
   static const warningBg = Color(0xFFFEF3C7);
   static const error = Color(0xFFDC2626);
   static const errorBg = Color(0xFFFEE2E2);

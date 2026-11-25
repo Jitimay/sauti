@@ -1,106 +1,146 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../app/theme/app_colors.dart';
+import '../../../../core/l10n/app_language.dart';
 import '../../../../core/l10n/l10n_ext.dart';
 import '../../../../core/widgets/layout.dart';
 import '../../../settings/presentation/bloc/preferences_cubit.dart';
 
-/// Three short steps. Buttons (not swipes) move forward — swipe is optional.
-class OnboardingPage extends StatefulWidget {
+class OnboardingPage extends StatelessWidget {
   const OnboardingPage({super.key});
 
-  @override
-  State<OnboardingPage> createState() => _OnboardingPageState();
-}
-
-class _OnboardingPageState extends State<OnboardingPage> {
-  final _controller = PageController();
-  int _page = 0;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _finish() => context.read<PreferencesCubit>().completeOnboarding();
+  void _finish(BuildContext context) =>
+      context.read<PreferencesCubit>().completeOnboarding();
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final steps = [
-      (Icons.record_voice_over_rounded, l.onboardingTitle1, l.onboardingBody1),
-      (Icons.verified_user_rounded, l.onboardingTitle2, l.onboardingBody2),
-      (Icons.accessibility_new_rounded, l.onboardingTitle3, l.onboardingBody3),
-    ];
-    final last = _page == steps.length - 1;
+    final theme = Theme.of(context);
+    final text = theme.textTheme;
+    final status = StatusColors.of(context);
+    final isKirundi =
+        Localizations.localeOf(context).languageCode ==
+        AppLanguage.kirundi.code;
+
     return Scaffold(
       body: SafeArea(
         child: ResponsiveBody(
-          child: Column(children: [
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(onPressed: _finish, child: Text(l.onboardingSkip)),
-            ),
-            Expanded(
-              child: PageView.builder(
-                controller: _controller,
-                itemCount: steps.length,
-                onPageChanged: (i) => setState(() => _page = i),
-                itemBuilder: (context, i) {
-                  final (icon, title, body) = steps[i];
-                  return Semantics(
-                    liveRegion: true,
-                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Container(
-                        width: 140,
-                        height: 140,
-                        decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer, shape: BoxShape.circle),
-                        child: Icon(icon, size: 72, color: Theme.of(context).colorScheme.primary),
-                      ),
-                      const SizedBox(height: 40),
-                      Semantics(header: true, child: Text(title, textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineMedium)),
-                      const SizedBox(height: 16),
-                      Text(body, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyLarge),
-                    ]),
-                  );
-                },
-              ),
-            ),
-            Semantics(
-              label: l.onboardingStep(_page + 1, steps.length),
-              excludeSemantics: true,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (var i = 0; i < steps.length; i++)
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      margin: const EdgeInsets.all(4),
-                      width: i == _page ? 28 : 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(5),
-                        color: i == _page ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(4, 24, 4, 16),
+                  children: [
+                    const Center(child: HeadsetAvatarHero(size: 150)),
+                    const SizedBox(height: 24),
+                    Semantics(
+                      header: true,
+                      child: Text(
+                        l.onboardingTitle1,
+                        textAlign: TextAlign.center,
+                        style: text.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      l.onboardingBody1,
+                      textAlign: TextAlign.center,
+                      style: text.bodyLarge,
+                    ),
+                    const SizedBox(height: 24),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: status.sunken,
+                        borderRadius: BorderRadius.circular(Radii.md),
+                        border: Border.all(color: status.line),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            _OnboardingPoint(
+                              title: l.onboardingTitle2,
+                              description: l.onboardingBody2,
+                            ),
+                            const SizedBox(height: 16),
+                            _OnboardingPoint(
+                              title: l.onboardingTitle3,
+                              description: l.onboardingBody3,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (isKirundi) ...[
+                      const SizedBox(height: 16),
+                      Text(l.kirundiDraftNote, style: text.bodySmall),
+                    ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: last
-                    ? _finish
-                    : () => _controller.nextPage(duration: const Duration(milliseconds: 250), curve: Curves.easeOut),
-                child: Text(last ? l.onboardingStart : l.onboardingNext),
+              Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    FilledButton(
+                      onPressed: () => _finish(context),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(56),
+                        shape: const StadiumBorder(),
+                      ),
+                      child: Text(l.onboardingStart),
+                    ),
+                    const SizedBox(height: 8),
+                    Center(
+                      child: TextButton(
+                        onPressed: () => _finish(context),
+                        child: Text(l.onboardingSkip),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-          ]),
+            ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+class _OnboardingPoint extends StatelessWidget {
+  const _OnboardingPoint({required this.title, required this.description});
+
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.check_circle_rounded,
+          color: StatusColors.of(context).accent,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: text.titleSmall),
+              const SizedBox(height: 4),
+              Text(description, style: text.bodyMedium),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

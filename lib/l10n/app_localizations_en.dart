@@ -117,8 +117,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Voice input is not available on this device. Use the text box below to type your request.';
 
   @override
+  String get failureMicrophoneCapture =>
+      'Your browser could not start the microphone. Check the input device in your sound settings, then try again or type below.';
+
+  @override
+  String get failureSpeechService =>
+      'Your browser’s speech recognition service is unavailable. Try another browser or type below.';
+
+  @override
   String get failureVoicePermission =>
-      'Microphone permission is needed for voice. You can still type.';
+      'Allow microphone access in your browser or device settings, then try again. You can still type.';
 
   @override
   String get failureVoiceLanguage =>
@@ -256,6 +264,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get availableBalance => 'Available balance';
+
+  @override
+  String get showBalance => 'Show balance';
+
+  @override
+  String get hideBalance => 'Hide balance';
 
   @override
   String get recentActivity => 'Recent activity';
@@ -532,6 +546,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get receiptNewBalance => 'New balance';
 
   @override
+  String receiptAmountTo(String amount, String name) {
+    return '$amount sent to $name';
+  }
+
+  @override
   String receiptSpoken(String amount, String name, String reference) {
     return 'Your transfer of $amount to $name is confirmed by the bank. Reference $reference.';
   }
@@ -636,6 +655,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stateIdle => 'Tap the microphone and speak, or type below.';
 
   @override
+  String get stateMicrophoneAccess => 'Waiting for microphone access…';
+
+  @override
   String get stateListening => 'Listening…';
 
   @override
@@ -675,6 +697,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get repeat => 'Repeat';
+
+  @override
+  String get muteVoice => 'Mute voice';
+
+  @override
+  String get unmuteVoice => 'Unmute voice';
 
   @override
   String get stopSpeaking => 'Stop speaking';
@@ -739,7 +767,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String voiceLanguageUnsupported(String language) {
-    return 'Voice input in $language is not available on this device. You can type, or use French voice.';
+    return 'Voice input in $language is not available on this device. You can type your request below.';
   }
 
   @override
@@ -751,7 +779,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String ttsUnavailable(String language) {
-    return 'No voice for $language on this device. Replies are shown as text.';
+    return 'Speech playback in $language is unavailable right now. You can read the reply on screen.';
   }
 
   @override
@@ -774,14 +802,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloudAiDescription =>
-      'Sends minimal, anonymised banking facts to Google\'s Gemini via Firebase to understand free-form requests. Off: Sauti uses its on-device assistant.';
+      'Allows Google Gemini to process your requests, recent conversation, and selected banking details. Turning it off keeps AI replies on this device.';
 
   @override
   String get naturalVoiceSetting => 'Natural voice (Gemini)';
 
   @override
   String get naturalVoiceDescription =>
-      'Replies are read aloud by Gemini via Firebase. Answers from the on-device AI always use the phone\'s own voice, so they never leave the device. Off: the phone\'s voice is always used.';
+      'Online replies can be sent to Gemini via Firebase for natural speech. Replies from private on-device AI use the device voice.';
 
   @override
   String get cloudAiNotConfigured =>
@@ -828,6 +856,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Stronger colours and borders for low vision.';
 
   @override
+  String get voiceConsentTitle => 'Read replies aloud?';
+
+  @override
+  String get voiceConsentBody =>
+      'Sauti can speak your replies, including banking details that people nearby may hear. You can change this in Accessibility settings.';
+
+  @override
+  String get voiceConsentDecline => 'Keep replies quiet';
+
+  @override
+  String get voiceConsentAllow => 'Allow spoken replies';
+
+  @override
   String get voiceFeedback => 'Read replies aloud';
 
   @override
@@ -863,6 +904,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navActivity => 'Activity';
+
+  @override
+  String get navInsights => 'Insights';
 
   @override
   String get navSettings => 'Settings';

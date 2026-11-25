@@ -115,8 +115,16 @@ class AppLocalizationsRn extends AppLocalizations {
       'Kuvuga ntibikunda kuri iyi telefone. Andika icyo ushaka munsi.';
 
   @override
+  String get failureMicrophoneCapture =>
+      'Mucukumbuzi ntiyashoboye gutangura mikoro. Suzuma igikoresho co kwinjiza ijwi, wongere ugerageze canke wandike.';
+
+  @override
+  String get failureSpeechService =>
+      'Serivisi yo gutahura ijwi muri mucukumbuzi ntiboneka. Gerageza iyindi mucukumbuzi canke wandike.';
+
+  @override
   String get failureVoicePermission =>
-      'Hakenewe uruhusha rwa mikoro. Ushobora kwandika.';
+      'Emera gukoresha mikoro mu miterere ya mucukumbuzi canke y’igikoresho, wongere ugerageze. Urashobora no kwandika.';
 
   @override
   String get failureVoiceLanguage =>
@@ -255,6 +263,12 @@ class AppLocalizationsRn extends AppLocalizations {
 
   @override
   String get availableBalance => 'Amafaranga ufise';
+
+  @override
+  String get showBalance => 'Erekana amafaranga asigaye';
+
+  @override
+  String get hideBalance => 'Hisha amafaranga asigaye';
 
   @override
   String get recentActivity => 'Ivyakozwe vya vuba';
@@ -532,6 +546,11 @@ class AppLocalizationsRn extends AppLocalizations {
   String get receiptNewBalance => 'Amafaranga usigaranye';
 
   @override
+  String receiptAmountTo(String amount, String name) {
+    return '$amount yarungikiwe $name';
+  }
+
+  @override
   String receiptSpoken(String amount, String name, String reference) {
     return 'Kurungikira $name $amount vyemejwe na banki. Inomero $reference.';
   }
@@ -638,6 +657,9 @@ class AppLocalizationsRn extends AppLocalizations {
   String get stateIdle => 'Kora kuri mikoro uvuge, canke wandike hepfo.';
 
   @override
+  String get stateMicrophoneAccess => 'Turindiriye uruhusha rwa mikoro…';
+
+  @override
   String get stateListening => 'Ndakwumviriza…';
 
   @override
@@ -677,6 +699,12 @@ class AppLocalizationsRn extends AppLocalizations {
 
   @override
   String get repeat => 'Subiramwo';
+
+  @override
+  String get muteVoice => 'Zimya ijwi';
+
+  @override
+  String get unmuteVoice => 'Subiza ijwi';
 
   @override
   String get stopSpeaking => 'Hagarika kuvuga';
@@ -740,7 +768,7 @@ class AppLocalizationsRn extends AppLocalizations {
 
   @override
   String voiceLanguageUnsupported(String language) {
-    return 'Kuvuga mu $language ntibikunda kuri iyi telefone. Wandike, canke ukoreshe ijwi ry\'igifaransa.';
+    return 'Kuvuga mu $language ntibikunda kuri iyi telefone. Urashobora kwandika ico usaba.';
   }
 
   @override
@@ -751,7 +779,7 @@ class AppLocalizationsRn extends AppLocalizations {
 
   @override
   String ttsUnavailable(String language) {
-    return 'Nta jwi rya $language kuri iyi telefone. Inyishu zigaragara mu nyandiko.';
+    return 'Gusoma mu $language ntibishoboka ubu. Urashobora gusoma inyishu ku rubuga.';
   }
 
   @override
@@ -774,14 +802,14 @@ class AppLocalizationsRn extends AppLocalizations {
 
   @override
   String get cloudAiDescription =>
-      'Irungika amakuru make ya banki kuri Gemini ya Google biciye kuri Firebase. Bihagaritswe: Sauti ikoresha umufasha wo kuri telefone.';
+      'Yemerera Google Gemini gukoresha ivyo usavye, ikiganiro giheruka n’amakuru amwe ya banki. Uyizimije, inyishu za AI ziguma kuri iki gikoresho.';
 
   @override
   String get naturalVoiceSetting => 'Ijwi risa n\'iry\'umuntu (Gemini)';
 
   @override
   String get naturalVoiceDescription =>
-      'Inyishu zisomwa na Gemini biciye kuri Firebase. Inyishu z\'umufasha wo kuri telefone zama zisomwa n\'ijwi rya telefone. Bihagaritswe: hakoreshwa ijwi rya telefone.';
+      'Inyishu zo kuri interineti zirashobora kurungikwa kuri Gemini biciye kuri Firebase kugira zisomwe neza. Inyishu z’ibanga zisomwa n’ijwi ry’igikoresho.';
 
   @override
   String get cloudAiNotConfigured =>
@@ -828,6 +856,19 @@ class AppLocalizationsRn extends AppLocalizations {
       'Amabara n\'imbibe bikomeye ku batabona neza.';
 
   @override
+  String get voiceConsentTitle => 'Usome inyishu n’ijwi?';
+
+  @override
+  String get voiceConsentBody =>
+      'Sauti irashobora gusoma inyishu zawe. Abantu bari hafi barashobora kwumva amakuru yawe ya banki. Urashobora guhindura iri hitamwo mu miterere y’ukworohereza gukoresha.';
+
+  @override
+  String get voiceConsentDecline => 'Gumiza inyishu mu gacerere';
+
+  @override
+  String get voiceConsentAllow => 'Emera inyishu z’ijwi';
+
+  @override
   String get voiceFeedback => 'Soma inyishu n\'ijwi';
 
   @override
@@ -863,6 +904,9 @@ class AppLocalizationsRn extends AppLocalizations {
 
   @override
   String get navActivity => 'Ivyakozwe';
+
+  @override
+  String get navInsights => 'Ivyegeranyo';
 
   @override
   String get navSettings => 'Ingene bigenda';

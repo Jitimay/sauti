@@ -24,6 +24,7 @@ class DemoBanner extends StatelessWidget {
     final tag = split > 0 ? text.substring(0, split).trim() : text;
     final rest = split > 0 ? text.substring(split + 1).trim() : '';
     final fg = hc ? status.accent : Colors.white;
+    final badge = hc ? status.accent : AppColors.amber;
     return Semantics(
       container: true,
       label: text,
@@ -38,7 +39,7 @@ class DemoBanner extends StatelessWidget {
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(color: status.accent, borderRadius: BorderRadius.circular(6)),
+            decoration: BoxDecoration(color: badge, borderRadius: BorderRadius.circular(6)),
             child: Text(tag,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.black, fontWeight: FontWeight.w800)),
           ),

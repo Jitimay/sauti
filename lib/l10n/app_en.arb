@@ -39,7 +39,9 @@
   "failureAiUnavailable": "The assistant is unavailable right now.",
   "failureToolNotPermitted": "That action is not permitted.",
   "failureVoiceUnavailable": "Voice input is not available on this device. Use the text box below to type your request.",
-  "failureVoicePermission": "Microphone permission is needed for voice. You can still type.",
+  "failureMicrophoneCapture": "Your browser could not start the microphone. Check the input device in your sound settings, then try again or type below.",
+  "failureSpeechService": "Your browser’s speech recognition service is unavailable. Try another browser or type below.",
+  "failureVoicePermission": "Allow microphone access in your browser or device settings, then try again. You can still type.",
   "failureVoiceLanguage": "Voice is not available in this language on this device.",
   "failureServer": "The service had a problem. Nothing was changed.",
   "failureUnexpected": "Something went wrong. Nothing was changed.",
@@ -108,6 +110,8 @@
     }
   },
   "availableBalance": "Available balance",
+  "showBalance": "Show balance",
+  "hideBalance": "Hide balance",
   "recentActivity": "Recent activity",
   "seeAll": "See all",
   "quickActions": "Quick actions",
@@ -258,6 +262,8 @@
   "receiptReference": "Reference",
   "receiptDate": "Date",
   "receiptNewBalance": "New balance",
+  "receiptAmountTo": "{amount} sent to {name}",
+  "@receiptAmountTo": {"placeholders": {"amount": {"type": "String"}, "name": {"type": "String"}}},
   "receiptSpoken": "Your transfer of {amount} to {name} is confirmed by the bank. Reference {reference}.",
   "@receiptSpoken": {
     "placeholders": {
@@ -348,6 +354,7 @@
   "startListening": "Start speaking",
   "stopListening": "Stop listening",
   "stateIdle": "Tap the microphone and speak, or type below.",
+  "stateMicrophoneAccess": "Waiting for microphone access…",
   "stateListening": "Listening…",
   "stateProcessing": "Thinking…",
   "stateResponding": "Speaking…",
@@ -368,6 +375,8 @@
   "toolWhatTransfer": "the transfer details",
   "toolWhatNotifications": "your notifications",
   "repeat": "Repeat",
+  "muteVoice": "Mute voice",
+  "unmuteVoice": "Unmute voice",
   "stopSpeaking": "Stop speaking",
   "clearConversation": "Clear conversation",
   "historyTitle": "Conversation history",
@@ -400,7 +409,7 @@
       }
     }
   },
-  "voiceLanguageUnsupported": "Voice input in {language} is not available on this device. You can type, or use French voice.",
+  "voiceLanguageUnsupported": "Voice input in {language} is not available on this device. You can type your request below.",
   "@voiceLanguageUnsupported": {
     "placeholders": {
       "language": {
@@ -410,7 +419,7 @@
   },
   "useFrenchVoice": "Use French voice",
   "noSpeechHeard": "I didn't hear anything. Tap the microphone and try again.",
-  "ttsUnavailable": "No voice for {language} on this device. Replies are shown as text.",
+  "ttsUnavailable": "Speech playback in {language} is unavailable right now. You can read the reply on screen.",
   "@ttsUnavailable": {
     "placeholders": {
       "language": {
@@ -424,9 +433,9 @@
   "languageSetting": "Language",
   "accessibilitySetting": "Accessibility",
   "cloudAiSetting": "Use cloud AI (Gemini)",
-  "cloudAiDescription": "Sends minimal, anonymised banking facts to Google's Gemini via Firebase to understand free-form requests. Off: Sauti uses its on-device assistant.",
+  "cloudAiDescription": "Allows Google Gemini to process your requests, recent conversation, and selected banking details. Turning it off keeps AI replies on this device.",
   "naturalVoiceSetting": "Natural voice (Gemini)",
-  "naturalVoiceDescription": "Replies are read aloud by Gemini via Firebase. Answers from the on-device AI always use the phone's own voice, so they never leave the device. Off: the phone's voice is always used.",
+  "naturalVoiceDescription": "Online replies can be sent to Gemini via Firebase for natural speech. Replies from private on-device AI use the device voice.",
   "cloudAiNotConfigured": "Cloud AI is not configured in this build. Sauti uses its on-device assistant.",
   "demoControls": "Demo controls",
   "simulateOffline": "Simulate no connection",
@@ -447,6 +456,10 @@
   },
   "highContrast": "High contrast",
   "highContrastDescription": "Stronger colours and borders for low vision.",
+  "voiceConsentTitle": "Read replies aloud?",
+  "voiceConsentBody": "Sauti can speak your replies, including banking details that people nearby may hear. You can change this in Accessibility settings.",
+  "voiceConsentDecline": "Keep replies quiet",
+  "voiceConsentAllow": "Allow spoken replies",
   "voiceFeedback": "Read replies aloud",
   "speechSpeed": "Speech speed",
   "speechSlow": "Slow",
@@ -459,6 +472,7 @@
   "navHome": "Home",
   "navAssistant": "Assistant",
   "navActivity": "Activity",
+  "navInsights": "Insights",
   "navSettings": "Settings",
   "kirundiDraftNote": "Kirundi translations are a first draft under review by native speakers.",
   "onDeviceAiSetting": "Private on-device AI (Gemini Nano)",

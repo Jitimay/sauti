@@ -102,7 +102,7 @@ final class TestHarness {
     SharedPreferences.setMockInitialValues({
       if (language != null) 'settings.language': language.code,
       'settings.onboardingComplete': onboarded,
-      'settings.voiceFeedback': voiceFeedback,
+      if (voiceFeedback) 'settings.automaticVoiceFeedback': true,
       'settings.reduceMotion': true,
       if (signedIn) 'demo_session_active': true,
     });

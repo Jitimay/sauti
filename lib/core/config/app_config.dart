@@ -32,8 +32,8 @@ final class AppConfig {
     this.firebase,
     this.appCheckDebug = false,
     this.appCheckDebugToken = '',
-    this.ttsModel = 'gemini-3.8-flash-tts',
-    this.ttsVoice = 'Aoede',
+    this.ttsModel = 'gemini-3.8-flash-lite-tts',
+    this.ttsVoice = 'Kore',
     this.recaptchaSiteKey = '',
     this.recaptchaEnterpriseKey = '',
     this.functionsRegion = 'europe-west1',
@@ -51,8 +51,8 @@ final class AppConfig {
     const model = String.fromEnvironment('SAUTI_AI_MODEL', defaultValue: 'gemini-3.8-flash');
     const appCheckDebug = bool.fromEnvironment('SAUTI_APP_CHECK_DEBUG');
     const appCheckDebugToken = String.fromEnvironment('SAUTI_APP_CHECK_DEBUG_TOKEN');
-    const ttsModel = String.fromEnvironment('SAUTI_TTS_MODEL', defaultValue: 'gemini-3.8-flash-tts');
-    const ttsVoice = String.fromEnvironment('SAUTI_TTS_VOICE', defaultValue: 'Aoede');
+    const ttsModel = String.fromEnvironment('SAUTI_TTS_MODEL', defaultValue: 'gemini-3.8-flash-lite-tts');
+    const ttsVoice = String.fromEnvironment('SAUTI_TTS_VOICE', defaultValue: 'Kore');
     const region = String.fromEnvironment('SAUTI_FUNCTIONS_REGION', defaultValue: 'europe-west1');
     const recaptcha = String.fromEnvironment('RECAPTCHA_SITE_KEY');
     const recaptchaEnterprise = String.fromEnvironment('RECAPTCHA_ENTERPRISE_KEY');

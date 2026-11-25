@@ -32,10 +32,22 @@ abstract final class IntentSchema {
     'type': 'object',
     'properties': {
       'intent': {'type': 'string', 'enum': intents.keys.toList()},
-      'amount': {'type': 'integer', 'description': 'Amount in BIF, only if the user said one.'},
-      'name': {'type': 'string', 'description': 'Person or recipient name, exactly as the user said it.'},
-      'count': {'type': 'integer', 'description': 'How many items the user asked for.'},
-      'category': {'type': 'string', 'enum': TransactionCategory.values.map((c) => c.name).toList()},
+      'amount': {
+        'type': 'integer',
+        'description': 'Amount in BIF, only if the user said one.',
+      },
+      'name': {
+        'type': 'string',
+        'description': 'Person or recipient name, exactly as the user said it.',
+      },
+      'count': {
+        'type': 'integer',
+        'description': 'How many items the user asked for.',
+      },
+      'category': {
+        'type': 'string',
+        'enum': TransactionCategory.values.map((c) => c.name).toList(),
+      },
       'last_month': {'type': 'boolean'},
       'yesterday': {'type': 'boolean'},
     },
@@ -68,12 +80,12 @@ Examples:
 "Show my last 3 transactions" -> {"intent":"recent_transactions","count":3}
 The app answers in ${uiLanguage.nativeName}; you only label.''';
 
-  /// Builds the single-turn prompt. The previous reply is included (short) so
-  /// follow-ups like "and last month?" can be labelled.
-  static String prompt(String userText, {String? previousReply}) {
-    final prev = previousReply == null || previousReply.isEmpty
+  /// Uses the user's previous request for follow-ups. Past assistant replies
+  /// may contain account figures and are outside the classifier's input.
+  static String prompt(String userText, {String? previousRequest}) {
+    final prev = previousRequest == null || previousRequest.isEmpty
         ? ''
-        : 'Previous Sauti reply: "${previousReply.length > 160 ? '${previousReply.substring(0, 160)}…' : previousReply}"\n';
+        : 'Previous user request: "${previousRequest.length > 160 ? '${previousRequest.substring(0, 160)}…' : previousRequest}"\n';
     return '${prev}Request: "$userText"\nJSON:';
   }
 
@@ -94,14 +106,19 @@ The app answers in ${uiLanguage.nativeName}; you only label.''';
   /// * when the user said an amount in digits, that amount wins over the
   ///   model's (the model cannot change how much is sent);
   /// * ranges are enforced (count 1–20, amount 1–1,000,000,000).
-  static ParsedIntent toIntent(Map<String, Object?> json, {required String userText}) {
+  static ParsedIntent toIntent(
+    Map<String, Object?> json, {
+    required String userText,
+  }) {
     final type = intents[json['intent']] ?? IntentType.unknown;
 
     int? intIn(Object? v, int min, int max) {
       final n = switch (v) {
         final int i => i,
-        final double d when d == d.truncateToDouble() && d.isFinite => d.toInt(),
-        final String s when RegExp(r'^\d{1,12}$').hasMatch(s.trim()) => int.parse(s.trim()),
+        final double d when d == d.truncateToDouble() && d.isFinite =>
+          d.toInt(),
+        final String s when RegExp(r'^\d{1,12}$').hasMatch(s.trim()) =>
+          int.parse(s.trim()),
         _ => null,
       };
       return n == null || n < min || n > max ? null : n;
@@ -121,14 +138,21 @@ The app answers in ${uiLanguage.nativeName}; you only label.''';
 
     final spoken = IntentParser.extractAmount(userText);
     final modelAmount = intIn(json['amount'], 1, 1000000000);
-    final amount = spoken ?? (modelAmount == null ? null : Money.bif(modelAmount));
+    final amount =
+        spoken ?? (modelAmount == null ? null : Money.bif(modelAmount));
 
-    final category = TransactionCategory.values.where((c) => c.name == json['category']).firstOrNull;
-    final ref = RegExp(r'#([A-Za-z0-9_-]{2,64})').firstMatch(userText)?.group(1);
+    final category = TransactionCategory.values
+        .where((c) => c.name == json['category'])
+        .firstOrNull;
+    final ref = RegExp(r'#([A-Za-z0-9_-]{2,64})')
+        .firstMatch(userText)
+        ?.group(1);
 
     return ParsedIntent(
       type,
-      amount: type == IntentType.transfer || type == IntentType.searchIncoming ? amount : null,
+      amount: type == IntentType.transfer || type == IntentType.searchIncoming
+          ? amount
+          : null,
       name: name,
       count: intIn(json['count'], 1, 20),
       category: category,

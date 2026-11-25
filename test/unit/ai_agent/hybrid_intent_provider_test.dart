@@ -13,14 +13,19 @@ import '../../helpers/fakes.dart';
 
 /// Behaves like Gemini Nano via Firebase AI Logic: returns a JSON intent.
 base class FakeIntentClient implements HybridAiClient {
-  FakeIntentClient(this.json, {this.state = OnDeviceState.available, this.source = HybridSource.onDevice});
+  FakeIntentClient(
+    this.json, {
+    this.state = OnDeviceState.available,
+    this.source = HybridSource.onDevice,
+  });
   Map<String, Object?> json;
   OnDeviceState state;
   HybridSource source;
   final calls = <({bool onDevice, bool cloud})>[];
 
   @override
-  Future<HybridStatus> status({required String languageCode}) async => HybridStatus(
+  Future<HybridStatus> status({required String languageCode}) async =>
+      HybridStatus(
         onDeviceAvailable: state == OnDeviceState.available,
         onDeviceReason: state.name,
         onDeviceSupportsLanguage: true,
@@ -54,20 +59,31 @@ base class FakeIntentClient implements HybridAiClient {
     required bool allowCloud,
     required String cloudModel,
     required HybridToolHandler onToolCall,
-  }) =>
-      throw const HybridAiException('unavailable');
+  }) => throw const HybridAiException('unavailable');
 }
 
 void main() {
   late TestStack s;
 
-  Future<ChatMessage> ask(String text, {AppLanguage lang = AppLanguage.english}) async {
-    final events = await s.orchestrator.run(userText: text, history: const [], language: lang).toList();
+  Future<ChatMessage> ask(
+    String text, {
+    AppLanguage lang = AppLanguage.english,
+  }) async {
+    final events = await s.orchestrator
+        .run(userText: text, history: const [], language: lang)
+        .toList();
     return (events.last as AgentReplied).message;
   }
 
-  HybridIntentProvider provider(FakeIntentClient c, {bool cloudAllowed = false}) => HybridIntentProvider(
-      client: c, cloudAllowed: () async => cloudAllowed, now: () => testNow, cloudModel: 'gemini-test');
+  HybridIntentProvider provider(
+    FakeIntentClient c, {
+    bool cloudAllowed = false,
+  }) => HybridIntentProvider(
+    client: c,
+    cloudAllowed: () async => cloudAllowed,
+    now: () => testNow,
+    cloudModel: 'gemini-test',
+  );
 
   test('Gemini Nano labels the intent; Sauti tools and templates answer, labelled on-device', () async {
     final client = FakeIntentClient({'intent': 'balance'});
@@ -80,28 +96,67 @@ void main() {
   });
 
   test('transfer intent only drafts, with the amount the user said, never the model\'s', () async {
-    final client = FakeIntentClient({'intent': 'transfer', 'amount': 999999, 'name': 'Jean'});
+    final client = FakeIntentClient({
+      'intent': 'transfer',
+      'amount': 999999,
+      'name': 'Jean',
+    });
     s = TestStack(extraProviders: [provider(client)]);
     final m = await ask('Please send 20,000 to Jean');
-    expect(m.cards.whereType<TransferDraftCard>().single.draft.amount.wholeUnits, 20000);
-    expect(s.simulated.appliedTransfers, 0, reason: 'a model can never move money');
+    expect(
+      m.cards.whereType<TransferDraftCard>().single.draft.amount.wholeUnits,
+      20000,
+    );
+    expect(
+      s.simulated.appliedTransfers,
+      0,
+      reason: 'a model can never move money',
+    );
   });
 
   test('a recipient the user never said is dropped', () {
-    final i = IntentSchema.toIntent({'intent': 'transfer', 'amount': 5000, 'name': 'Aline'}, userText: 'send 5000 to Jean');
+    final i = IntentSchema.toIntent({
+      'intent': 'transfer',
+      'amount': 5000,
+      'name': 'Aline',
+    }, userText: 'send 5000 to Jean');
     expect(i.type, IntentType.transfer);
     expect(i.name, isNull);
   });
 
-  test('Nano not downloaded → not used; Kirundi skips on-device', () async {
-    final notReady = FakeIntentClient({'intent': 'balance'}, state: OnDeviceState.downloadable);
-    s = TestStack(extraProviders: [provider(notReady, cloudAllowed: true)]);
-    expect((await ask('How much money do I have?')).provider, AiProviderKind.localDeterministic);
+  test(
+    'Nano not downloaded uses the Firebase SDK cloud fallback when permitted',
+    () async {
+      final client = FakeIntentClient(
+        {'intent': 'balance'},
+        state: OnDeviceState.downloadable,
+        source: HybridSource.cloud,
+      );
+      s = TestStack(extraProviders: [provider(client, cloudAllowed: true)]);
+      final reply = await ask('How much money do I have?');
+      expect(reply.provider, AiProviderKind.cloud);
+      expect(reply.cards.single, isA<BalanceCard>());
+      expect(client.calls.single, (onDevice: true, cloud: true));
 
+      s = TestStack(extraProviders: [provider(client)]);
+      expect(
+        (await ask('How much money do I have?')).provider,
+        AiProviderKind.localDeterministic,
+      );
+      expect(client.calls, hasLength(1));
+    },
+  );
+
+  test('Kirundi skips on-device intent classification', () async {
     final ready = FakeIntentClient({'intent': 'balance'});
     s = TestStack(extraProviders: [provider(ready)]);
-    expect((await ask('Amafaranga mfise ni angahe?', lang: AppLanguage.kirundi)).provider,
-        AiProviderKind.localDeterministic);
+    expect(
+      (await ask(
+        'Amafaranga mfise ni angahe?',
+        lang: AppLanguage.kirundi,
+      )).provider,
+      AiProviderKind.localDeterministic,
+    );
     expect(ready.calls, isEmpty);
   });
 

@@ -8,7 +8,7 @@ final class AccessibilitySettings extends Equatable {
   const AccessibilitySettings({
     this.textScale = 1.0,
     this.highContrast = false,
-    this.voiceFeedback = true,
+    this.voiceFeedbackChoice,
     this.speechRate = 0.5,
     this.interactionMode = InteractionMode.standard,
     this.reduceMotion = false,
@@ -21,7 +21,10 @@ final class AccessibilitySettings extends Equatable {
   final bool highContrast;
 
   /// Speak agent replies aloud automatically.
-  final bool voiceFeedback;
+  bool get voiceFeedback => voiceFeedbackChoice == true;
+
+  /// Null until the user explicitly chooses whether to enable automatic voice.
+  final bool? voiceFeedbackChoice;
 
   /// 0.25 (slow) – 1.0 (fast).
   final double speechRate;
@@ -39,14 +42,14 @@ final class AccessibilitySettings extends Equatable {
       AccessibilitySettings(
         textScale: textScale ?? this.textScale,
         highContrast: highContrast ?? this.highContrast,
-        voiceFeedback: voiceFeedback ?? this.voiceFeedback,
+        voiceFeedbackChoice: voiceFeedback ?? voiceFeedbackChoice,
         speechRate: speechRate ?? this.speechRate,
         interactionMode: interactionMode ?? this.interactionMode,
         reduceMotion: reduceMotion ?? this.reduceMotion,
       );
 
   @override
-  List<Object?> get props => [textScale, highContrast, voiceFeedback, speechRate, interactionMode, reduceMotion];
+  List<Object?> get props => [textScale, highContrast, voiceFeedbackChoice, speechRate, interactionMode, reduceMotion];
 }
 
 final class AppPreferences extends Equatable {

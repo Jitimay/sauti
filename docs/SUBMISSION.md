@@ -1,138 +1,80 @@
-# #BuildHybridAI 2026 — Sauti submission kit
+# Sauti | #BuildHybridAI 2026 submission draft
 
-Deadline: **Nov 30, 2026, 2:00 PM PT** (Dec 1, 00:00 in Bujumbura). Commits after that are not evaluated.
+- **Platform** — Web (Chrome)
+- **Deadline** — November 30 at 2 p.m. Pacific / December 1 at 00:00 in Bujumbura
+- [Devpost official rules](https://firebasehybridaihackathon.devpost.com/rules)
 
-Everything below is a draft for the Devpost form. Items marked **⚠ verify** describe behaviour that must be checked on real hardware before submitting. Remove or soften any claim you could not demonstrate.
+## Devpost project description
 
----
+**Title** — Sauti, voice banking across unreliable connections
 
-## 1. Devpost text
-
-**Tagline:** Talk to your bank in Kirundi, French or English. A private, on-device AI banking agent for people who can't use banking apps.
+**One-line summary** — Sauti helps people with low vision in Burundi check a balance, understand a payment, and review a transfer through speech or text, with Firebase AI Logic choosing between on-device and cloud inference.
 
 ### Inspiration
 
-Most people in Burundi bank on a phone, but banking apps assume you can read small text, navigate menus and type. Blind and visually impaired people, elderly users, people with limited hand mobility and people with limited literacy get locked out, or have to hand their phone and their PIN to someone else. Connectivity is also patchy, and sending your financial life to a server isn't always acceptable.
+Checking a balance should be a task you can do privately. For someone with low vision, that task can involve reading a small amount, finding the right account, and navigating a screen full of competing controls. An unreliable connection can interrupt the same task. Sauti explores a banking interface in which you can ask one question, hear the answer, and tell when the balance was last synced.
 
 ### What it does
 
-Sauti ("voice" in Kiswahili) is a voice-first banking agent. You say *"How much money do I have?"*, *"Who sent me money yesterday?"*, *"How much did I spend on food last month?"* or *"Send 20,000 francs to Jean"*. Sauti answers aloud in plain language.
+Ask “How much money do I have?” and Sauti shows a balance card from a typed banking tool. The reply can be read aloud. If connectivity drops after the balance has been synced, Sauti can show the last saved balance and its timestamp. Outgoing transfers require a connection.
 
-* **Hybrid AI with Firebase AI Logic, on-device first:**
-  * Android: Gemini Nano through the hybrid SDK.
-  * Chrome: built-in Gemini Nano through the JS SDK.
-  * iOS: Apple Foundation Models, with Firebase's `GeminiLanguageModel` as cloud fallback.
+Ask Sauti to send money to a saved beneficiary and it drafts the transfer for review. The app shows the recipient, amount, and fee before the user authenticates and presses Send. The demo bank uses fictitious accounts and funds.
 
-  Every reply carries a badge: **On-device AI · private**, **Cloud AI** or **Basic mode**.
-* **The AI never moves money.** It can only prepare a draft. You confirm on screen, authenticate with your fingerprint or passcode, and press **Send**. A receipt appears only after the bank confirms.
-* **The AI never invents numbers.** On Android and Chrome, Gemini Nano only labels the request as a small JSON intent. Sauti's typed tools fetch the data and its templates write the reply, so every figure comes from the bank. A grounding guard checks LLM-written replies, on-device or cloud.
-* **Accessible from the first screen:**
-  * screen-reader labels everywhere;
-  * text up to 200%;
-  * high contrast, reduced motion and a simplified mode;
-  * 56 dp touch targets;
-  * voice is never required.
-* **Works offline:** on-device AI, an encrypted snapshot labelled "saved at HH:mm · not live", and a deterministic basic mode. Transfers are refused offline and never queued.
-* **Three languages:** English, French and Ikirundi, for the interface and the spoken replies.
+The interface supports English, French, and Kirundi. Users can type or use the microphone and adjust text size, contrast, movement, and spoken replies. Speech recognition and device voices depend on the selected language and platform. Kirundi speech support should be described from the recorded device.
 
-### How we built it (how Firebase AI Logic is used)
+### How we used Firebase AI Logic
 
-Flutter app, Clean Architecture, BLoC. The AI layer is an `AgentOrchestrator` that tries providers in order, and every provider goes through one permissioned `ToolRegistry`. The registry validates arguments strictly, enforces permissions, and keeps an audit log without personal data.
+On desktop Chrome, Sauti’s Flutter web bridge uses the Firebase AI Logic JavaScript SDK in `PREFER_ON_DEVICE` mode when cloud AI is allowed. The SDK chooses Gemini Nano when it is available and cloud Gemini otherwise. The model classifies the user’s request as a structured intent. Sauti validates the intent, calls a typed banking tool, and renders the result in a reply and card. The classifier receives user requests without prior assistant replies or banking tool results. More open-ended requests can use the full Firebase AI Logic cloud agent, which receives conversation context and selected tool data. A deterministic intent engine covers common tasks without a model.
 
-| Tier | Firebase AI Logic usage | Code |
-|---|---|---|
-| On-device, Android | `Firebase.ai(...).generativeModel(onDeviceConfig = OnDeviceConfig(InferenceMode.PREFER_ON_DEVICE))`, `FirebaseAIOnDevice.checkStatus()/download()`, `response.inferenceSource` | `packages/sauti_hybrid_ai/android/.../SautiHybridAiPlugin.kt` |
-| On-device, Chrome | `getGenerativeModel(ai, { mode: PREFER_ON_DEVICE, onDeviceParams: { promptOptions: { responseConstraint } }, inCloudParams })`, `initializeDeviceModel()`, `inferenceSource` | `packages/sauti_hybrid_ai/lib/src/web_hybrid_ai.dart` |
-| On-device, iOS | Apple `LanguageModelSession` with `SystemLanguageModel`, then `FirebaseAI.firebaseAI(...).geminiLanguageModel(name:)`, with Sauti's tools bridged in | `packages/sauti_hybrid_ai/ios/.../SautiHybridAiPlugin.swift` |
-| Cloud | `FirebaseAI.googleAI(useLimitedUseAppCheckTokens: true).generativeModel(tools: …)` with typed function calling | `lib/features/ai_agent/data/cloud/gemini_ai_provider.dart` |
+The assistant identifies how each reply was generated. Whether the user speaks or types, the transfer tools only prepare and present drafts. Authentication and final submission live in the transfer screen. Cloud requests use Firebase App Check.
 
-Other Firebase products used:
-* **App Check:** Play Integrity / App Attest / reCAPTCHA, limited-use tokens, replay protection on callables.
-* **Authentication.**
-* **Firestore:** restrictive rules; money state is server-written only.
-* **Cloud Functions:** server-side transfers with idempotency, limits and ownership checks.
+| Runtime path | Source |
+|---|---|
+| Chrome hybrid SDK initialization, generation and inference source | [Web bridge](../packages/sauti_hybrid_ai/lib/src/web_hybrid_ai.dart) |
+| Structured intent, tool execution and reply rendering | [Hybrid intent provider](../lib/features/ai_agent/data/on_device/hybrid_intent_provider.dart) |
+| Cloud Gemini and typed function calls | [Gemini provider](../lib/features/ai_agent/data/cloud/gemini_ai_provider.dart) |
+| Tool selection and provider fallback | [Orchestrator](../lib/features/ai_agent/domain/services/agent_orchestrator.dart) |
+| User-approved transfer submission | [Submit transfer use case](../lib/features/transfers/domain/usecases/submit_transfer.dart) |
 
-### Challenges
+### What we built during the submission period
 
-* The Flutter `firebase_ai` package has no hybrid API, so we wrote a small native plugin per platform. Each one routes every tool call back into the same Dart registry.
-* On-device models on Android and Chrome can't call functions and have a ~4k-token budget. We turned that into a safety feature: the model labels the request, and Sauti answers from typed data.
-* Kirundi is barely supported by speech engines and on-device models, so Sauti detects support at runtime and degrades honestly to text input, French voice, the cloud agent or basic mode.
+The first Sauti commit is dated November 15, 2026. During the event we built the Flutter banking demo, the voice and text assistant, accessibility controls, the simulated bank and Firebase sandbox adapters, and the hybrid inference bridge for Chrome, Android, and iOS. The demo is centered on Chrome. The Android and iOS implementations need separate device validation.
 
-### Accomplishments
+Sauti started from a Flutter project template and uses the open-source dependencies in `pubspec.yaml`. The existing project draft records Claude Code use. Codex reviewed the implementation, ran automated checks, and helped refine the UI and submission evidence. Confirm any additional tools or pre-existing work before copying the disclosure to Devpost.
 
-* One agent and one tool registry across three on-device engines, the cloud and an offline mode.
-* Transfers are designed so that no model output can move money.
-* 180 app tests plus 6 plugin tests, an architecture test that keeps the domain layer pure, and accessibility guideline tests (contrast, touch targets, 200% scaling).
+### What's next
 
-### What we learned / What's next
+Observe a balance check and transfer review with people with low vision in Bujumbura, refine the Kirundi interface with fluent speakers, and test voice availability on the devices people use. A real banking integration would require a banking partner and server-verifiable approval for each transfer.
 
-* **Verified:** reCAPTCHA Enterprise App Check, cloud Gemini text (~6–7 s) and Gemini TTS natural voice (~4 s) all work live in Chrome. The on-device Chrome path (Gemini Nano Prompt API) is the next demo target.
-* Native-speaker review of the Kirundi phrases, and a Kirundi speech-recognition partner.
-* Field tests with blind users and elderly users in Bujumbura.
-* A licensed bank integration behind the existing `BankRepository` seam (regulator: BRB).
-* Server-side step-up authentication.
+## Testing instructions for judges
 
----
+- **Hosted demo** — [sauti-hybrid-ai.web.app](https://sauti-hybrid-ai.web.app). Choose English, complete onboarding if prompted, and use **Try the demo**, or sign in with the fictitious demo account `demo@sauti.app` / `Sauti2026`.
+- **On-device** — On eligible desktop Chrome, follow the [Firebase setup requirements](https://firebase.google.com/docs/ai-logic/hybrid/web/get-started). Under **Settings → Private on-device AI (Gemini Nano)**, select **Download** if offered and wait for **Ready**. Open the assistant, enter “How much money do I have?”, and check for the balance card and **On-device AI · private** indicator.
+- **Cloud** — In an online browser environment where Gemini Nano is unavailable, keep **Use cloud AI (Gemini)** enabled and repeat the same question. Verify the balance result and **Cloud AI** indicator.
+- **Offline** — While online, load the dashboard and run the on-device query once. With the app still open, disconnect and repeat the query. Check the cached timestamp. **Basic mode** is the deterministic fallback when the local model cannot answer. Reconnect before trying the transfer.
+- **Transfer review** — Ask “Send 20,000 francs to Jean.” Open the draft and review the recipient, amount, and fee. A sandbox transfer can proceed after authentication and an explicit Send action.
+- **Accessibility** — Repeat the balance task with the keyboard and the available screen reader. Try high contrast and 200% text size. Record the actual device, browser, and result before citing a manual test.
 
-## 2. Built during the submission period (required for existing work)
+For an offline-capable local build and detailed recording steps, see the [demo guide](DEMO_GUIDE.md).
 
-The repository was created on **Nov 15, 2026**, after the Nov 11 start, and everything in it was built during the contest period. See `git log`.
+## Devpost fields and assets
 
-* **Nov 15:** app, simulated bank, AI agent and tools, voice, accessibility, transfers, Firebase rules and functions, tests.
-* **Nov 15:** security fixes, then iOS hybrid inference.
-* **Nov 15–?:** Android and Chrome hybrid inference, on-device model management, App Check judging token, offline cache fixes, submission docs.
+| Field | Draft answer or asset |
+|---|---|
+| Entrant type, residence, organization, eligibility statements | Entrant to complete with their actual details |
+| Project start date and new or existing | November 15, 2026 based on Git history. Entrant to confirm when the work began. |
+| Platform | Web (Chrome) |
+| Main technology requirement | Use the Firebase AI Logic explanation above and link the Web bridge. |
+| Working demo | [Hosted demo](https://sauti-hybrid-ai.web.app). Verify it in a clean browser on the final build. |
+| Testing instructions | Use the judge instructions above. |
+| Source and open-source license | [Repository](https://github.com/Jitimay/sauti) and [Apache 2.0 license path](https://github.com/Jitimay/sauti/blob/HEAD/LICENSE). GitHub’s public API reported Apache-2.0 on November 24. Check that the final submission commit is visible before entering. |
+| Video | Upload the [demo recording](VIDEO_DESCRIPTION.md) to public YouTube and add its URL. Use English audio or English subtitles and stay within three minutes. |
 
-**Pre-existing code and tools disclosure:**
-* Flutter `flutter create` template.
-* Open-source packages listed in `pubspec.yaml`.
-* **AI coding assistant:** Claude Code (Anthropic) was used to write and review code and docs. *(Edit to reflect the tools you actually used.)*
+Capture stills from the exact build shown in the video. Prioritize the local balance card and inference badge, the same result with the cloud badge, the offline timestamp, and the transfer review with Send gated by authentication.
 
----
+## Readiness
 
-## 3. Testing instructions for judges
-
-**Demo login:** `demo@sauti.app` / `Sauti2026`, or tap **Try the demo**. The bank is simulated, with fictitious data; no real money is involved.
-
-* **Web (fastest):** https://sauti-hybrid-ai.web.app
-  * Cloud AI works in any browser.
-  * On-device needs desktop Chrome 139+ with `chrome://flags/#prompt-api-for-gemini-nano-multimodal-input` enabled. Then go to Settings → *Private on-device AI* → **Download**, and ask a question. The badge shows *On-device AI · private*.
-* **Android:** install `sauti-judging.apk` (link). On-device needs a phone supported by ML Kit's Prompt API (Gemini Nano). Then go to Settings → *Private on-device AI* → **Download**. Switch on airplane mode and ask *"How much money do I have?"*.
-* **iOS:** TestFlight link (if available). On-device needs Apple Intelligence on iOS 26+; the Gemini fallback needs iOS 27+.
-
-Things to try:
-1. Ask in English or French. Try *"Envoie 20 000 francs à Jean"* and see that nothing is sent until you authenticate and press **Send**.
-2. Turn on TalkBack or VoiceOver and complete a balance check by voice.
-3. Settings → Language → Ikirundi.
-
----
-
-## 4. Demo video script (≤ 3:00, English or English subtitles, public on YouTube)
-
-*(See the full copy-pasteable YouTube description and narration script in [docs/VIDEO_DESCRIPTION.md](VIDEO_DESCRIPTION.md))*
-
-| Time | Shot | Voice-over |
-|---|---|---|
-| 0:00–0:20 | A blind user's hands on a phone, TalkBack speaking | "In Burundi, banking apps lock out people who can't read small screens. Sauti lets them just talk to their bank." |
-| 0:20–0:50 | Online: "How much money do I have?" → spoken answer, **Cloud AI** badge, then Settings → Download Gemini Nano | "Sauti uses Firebase AI Logic hybrid inference: Gemini in the cloud, Gemini Nano on the phone." |
-| 0:50–1:25 | **Airplane mode on.** Same question, then "How much did I spend on food last month?" → **On-device AI · private** | "Offline, Gemini Nano understands the request on the phone. It only labels the intent; Sauti's tools fetch the numbers, so the AI can't invent your balance." |
-| 1:25–2:05 | Online: "Send 20,000 to Jean" → draft card → fingerprint → **Send** → receipt | "The AI can only prepare a transfer. You confirm, authenticate and press Send. The receipt comes from the bank." |
-| 2:05–2:30 | Kirundi UI; 200% text; high contrast | "Kirundi, French, English. Text up to 200%, high contrast, and voice is never required." |
-| 2:30–2:50 | Quick split: Android, Chrome, iPhone badges | "The same agent runs on Android, Chrome and iOS, on-device first." |
-| 2:50–3:00 | Logo + "Technology without barriers" | — |
-
-**⚠ verify** each shot on real hardware before recording. Don't fake the on-device badge.
-
----
-
-## 5. Pre-submission checklist
-
-- [ ] Repo public on GitHub (`github.com/Jitimay/sauti`), **Apache-2.0 LICENSE visible in the About section**.
-- [x] Firebase project `sauti-hybrid-ai` live: AI Logic (Google AI), App Check (reCAPTCHA Enterprise on web), Hosting deployed.
-- [x] reCAPTCHA Enterprise → App Check exchange **verified live** in Chrome.
-- [x] Cloud AI (Gemini text, 6–7 s) **verified live** — *Cloud AI* badge shown.
-- [x] Natural voice (Gemini TTS ~4 s, WAV playback) **verified live** on Mac Chrome.
-- [ ] On-device demo in Chrome: open `chrome://flags/#prompt-api-for-gemini-nano-multimodal-input`, Settings → *Private on-device AI* → **Download**, ask a question, confirm *On-device AI · private* badge appears.
-- [ ] Record ≤ 3-minute demo video in Chrome (see script in §4). Upload to YouTube (public), paste URL in Devpost.
-- [ ] Optional: Android judging APK — register Android app in Firebase, create `config/env.android.json`, build with `--dart-define-from-file=config/env.android.json`, test on a Gemini Nano–eligible phone.
-- [ ] Submit on Devpost: select Web/Chrome platform (+ Android if APK ready), paste repo URL, video URL, testing instructions. Disclose AI coding assistant used.
-- [ ] After judging: revoke App Check debug token in Firebase console.
+- [ ] Record successful on-device and cloud runs of the same balance query. Capture the browser version, app commit, and inference labels. Earlier repository notes record cloud Gemini and TTS checks. Repeat both paths on the final build.
+- [ ] Verify the on-device result and cached balance after disconnecting. Verify keyboard navigation, readable focus, and text scaling on the recorded flow.
+- [ ] Ask a person in the target audience to find and explain their demo balance without coaching. Note whether they can tell a saved balance from a current one, where they hesitate, and what you changed in response. Use fictitious data and include only anonymized observations in the entry.
+- [ ] Open the demo, repository, license, and video links from a clean browser. Match the hosted build to the documented submission commit and keep the demo available through December 16.
