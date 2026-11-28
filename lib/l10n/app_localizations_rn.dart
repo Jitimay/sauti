@@ -639,6 +639,30 @@ class AppLocalizationsRn extends AppLocalizations {
   String get readAloud => 'Soma n\'ijwi';
 
   @override
+  String get aiModeTitle => 'Hitamwo uburyo bwa AI';
+
+  @override
+  String get aiModeAuto => 'Ubwikora';
+
+  @override
+  String get aiModeCloud => 'Gemini kuri interineti';
+
+  @override
+  String get aiModeNano => 'Nano ku gikoresho';
+
+  @override
+  String get aiModeAutoDescription =>
+      'Koresha AI yo ku gikoresho iyo yiteguye.';
+
+  @override
+  String get aiModeCloudDescription =>
+      'Koresha Gemini kuri interineti iyo yemewe.';
+
+  @override
+  String get aiModeNanoDescription =>
+      'Koresha AI yo ku gikoresho. Itabonetse, koresha uburyo bw’ishimikiro.';
+
+  @override
   String get assistantTitle => 'Umufasha Sauti';
 
   @override

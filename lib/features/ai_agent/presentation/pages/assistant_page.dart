@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -8,6 +9,7 @@ import '../../../../core/l10n/app_language.dart';
 import '../../../../core/l10n/l10n_ext.dart';
 import '../../../../core/widgets/layout.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../settings/domain/settings.dart';
 import '../../../settings/presentation/bloc/accessibility_bloc.dart';
 import '../../../settings/presentation/bloc/preferences_cubit.dart';
 import '../../../voice/domain/speech_recognizer.dart';
@@ -271,6 +273,7 @@ class _AssistantPageState extends State<AssistantPage> {
                 )
               : Column(
                   children: [
+                    const _InferenceSelector(),
                     const _StatusStrip(),
                     Expanded(child: _Messages(onSuggestion: _sendText)),
                     const _VoiceNotices(),
@@ -417,6 +420,93 @@ class _VoiceListeningView extends StatelessWidget {
   }
 }
 
+class _InferenceSelector extends StatelessWidget {
+  const _InferenceSelector();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final prefs = context.watch<PreferencesCubit>().state;
+    final busy = context.select<AgentBloc, bool>((bloc) => bloc.state.busy);
+    final modes = {
+      AiInferenceMode.auto: (l.aiModeAuto, l.aiModeAutoDescription),
+      AiInferenceMode.cloud: (l.aiModeCloud, l.aiModeCloudDescription),
+      AiInferenceMode.onDevice: (
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS
+            ? l.providerOnDeviceAi
+            : l.aiModeNano,
+        l.aiModeNanoDescription,
+      ),
+    };
+
+    return ResponsiveBody(
+      maxWidth: 760,
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: Semantics(
+          label: l.aiModeTitle,
+          child: PopupMenuButton<AiInferenceMode>(
+            enabled: !busy,
+            tooltip: l.aiModeTitle,
+            initialValue: prefs.aiInferenceMode,
+            onSelected: (mode) =>
+                context.read<PreferencesCubit>().setAiInferenceMode(mode),
+            itemBuilder: (context) => [
+              for (final entry in modes.entries)
+                CheckedPopupMenuItem(
+                  value: entry.key,
+                  checked: entry.key == prefs.aiInferenceMode,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 7),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(entry.value.$1),
+                        Text(
+                          entry.value.$2,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
+                borderRadius: BorderRadius.circular(Radii.sm),
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 48),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.tune_rounded, size: 18),
+                      const SizedBox(width: 8),
+                      Flexible(child: Text(modes[prefs.aiInferenceMode]!.$1)),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.expand_more_rounded, size: 18),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _StatusStrip extends StatelessWidget {
   const _StatusStrip();
 
@@ -436,11 +526,11 @@ class _StatusStrip extends StatelessWidget {
     final voice = context.watch<VoiceBloc>().state;
     final st = StatusColors.of(context);
     final status = switch ((voice.status, agent.phase)) {
-      (VoiceStatus.preparing, _) => (Icons.mic_rounded, l.stateMicrophoneAccess),
-      (VoiceStatus.listening, _) => (
-        Icons.hearing_rounded,
-        l.stateListening,
+      (VoiceStatus.preparing, _) => (
+        Icons.mic_rounded,
+        l.stateMicrophoneAccess,
       ),
+      (VoiceStatus.listening, _) => (Icons.hearing_rounded, l.stateListening),
       (_, AgentPhase.executingTool) => (
         Icons.manage_search_rounded,
         l.toolRunning(toolWhat(l, agent.activeTool ?? '')),

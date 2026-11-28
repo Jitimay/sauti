@@ -8,11 +8,11 @@ Use “How much money do I have?” for every run. Keep the balance card and inf
 
 | Run | Setup | Expected result |
 |---|---|---|
-| **Cloud** | Go online in a browser environment where Chrome's local model is unavailable. Enable **Use cloud AI (Gemini)** in Settings. | A balance card and **Cloud AI** badge on the Firebase-configured build. |
-| **On-device** | Open eligible desktop Chrome and follow the [Firebase hybrid setup requirements](https://firebase.google.com/docs/ai-logic/hybrid/web/get-started). Go to **Settings → Private on-device AI (Gemini Nano)**. Select **Download** when offered. Wait for **Ready** before asking the question. | A balance card and **On-device AI · private** badge. |
+| **Cloud** | Enable **Use cloud AI (Gemini)** in Settings, then select **Cloud Gemini** in the Assistant’s mode menu. | A balance card and **Cloud AI** badge on the Firebase-configured build. |
+| **On-device** | Open eligible desktop Chrome and follow the [Firebase hybrid setup requirements](https://firebase.google.com/docs/ai-logic/hybrid/web/get-started). Go to **Settings → Private on-device AI (Gemini Nano)**. Select **Download** when offered. Wait for **Ready**, then select **On-device Nano** in the Assistant before asking the question. | A balance card and **On-device AI · private** badge. |
 | **Offline** | While still online, load the dashboard and run the on-device query once. Leave the page open, disconnect, and repeat the query. | The saved balance with a cache timestamp. The inference label reports the mode used. **Basic mode** means the deterministic intent engine answered. |
 
-Use the app’s balance card and status indicators as evidence. The demo connectivity toggle can exercise the cached banking path. Disconnect the device or use browser network controls when demonstrating actual offline inference.
+Use the app’s balance card and status indicators as evidence. To demonstrate automatic fallback, choose **Auto** in an online browser without the local model available and repeat the balance question. The demo connectivity toggle can exercise the cached banking path. Disconnect the device or use browser network controls when demonstrating actual offline inference.
 
 If Chrome reports the model as unavailable, check that the device meets the Firebase guide’s browser, hardware, storage, and flags requirements. Confirm the device model is ready before recording an on-device result. If speech recognition or playback is unavailable, continue by typing. Speech support depends on the browser and the selected language.
 

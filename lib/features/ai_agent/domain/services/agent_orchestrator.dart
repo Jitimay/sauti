@@ -63,11 +63,13 @@ final class AgentOrchestrator {
     this.maxToolRounds = 4,
     this.historyWindow = 10,
     this.guard = const GroundingGuard(),
+    this._providerAllowed,
     this._logger = const PrintLogger(),
   })  : assert(providers.isNotEmpty),
         _providers = providers;
 
   final List<AiProvider> _providers;
+  final bool Function(AiProviderKind)? _providerAllowed;
   final ToolRegistry _registry;
   final Clock _clock;
   final String Function() _newId;
@@ -85,6 +87,7 @@ final class AgentOrchestrator {
   }) async* {
     final available = <AiProvider>[];
     for (final p in _providers) {
+      if (_providerAllowed?.call(p.kind) == false) continue;
       if (await _safeAvailable(p, language)) available.add(p);
     }
     if (available.isEmpty) available.add(_providers.last);

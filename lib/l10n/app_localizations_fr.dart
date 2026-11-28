@@ -644,6 +644,30 @@ class AppLocalizationsFr extends AppLocalizations {
   String get readAloud => 'Lire à voix haute';
 
   @override
+  String get aiModeTitle => 'Choisir le mode IA';
+
+  @override
+  String get aiModeAuto => 'Auto';
+
+  @override
+  String get aiModeCloud => 'Gemini en ligne';
+
+  @override
+  String get aiModeNano => 'Nano sur l’appareil';
+
+  @override
+  String get aiModeAutoDescription =>
+      'Privilégier le modèle local lorsqu’il est prêt.';
+
+  @override
+  String get aiModeCloudDescription =>
+      'Utiliser Gemini en ligne si l’IA cloud est activée.';
+
+  @override
+  String get aiModeNanoDescription =>
+      'Utiliser le modèle local. Sinon, passer au mode de base.';
+
+  @override
   String get assistantTitle => 'Assistant Sauti';
 
   @override

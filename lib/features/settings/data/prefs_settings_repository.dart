@@ -45,11 +45,16 @@ final class PrefsSettingsRepository implements SettingsRepository {
         languageChosen: _p.getString('${_k}language') != null,
         onboardingComplete: _p.getBool('${_k}onboardingComplete') ?? false,
         cloudAiEnabled: _p.getBool('${_k}cloudAiEnabled') ?? true,
+        aiInferenceMode: AiInferenceMode.values
+                .where((mode) => mode.name == _p.getString('${_k}aiInferenceMode'))
+                .firstOrNull ??
+            AiInferenceMode.auto,
         naturalVoiceEnabled: _p.getBool('${_k}naturalVoiceEnabled') ?? true,
       );
 
   @override
   Future<void> savePreferences(AppPreferences p) async {
+    await _p.setString('${_k}aiInferenceMode', p.aiInferenceMode.name);
     if (p.languageChosen) await _p.setString('${_k}language', p.language.code);
     await _p.setBool('${_k}onboardingComplete', p.onboardingComplete);
     await _p.setBool('${_k}cloudAiEnabled', p.cloudAiEnabled);

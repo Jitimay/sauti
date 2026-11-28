@@ -11,14 +11,14 @@ import '../../helpers/fakes.dart';
 
 /// Scripted cloud provider for tests.
 final class ScriptedCloud implements AiProvider {
-  ScriptedCloud(this.script, {this.available = true});
+  ScriptedCloud(this.script, {this.available = true, this.kind = AiProviderKind.cloud});
   final List<AiResponse Function(AiRequest)> script;
   bool available;
   int calls = 0;
   final requests = <AiRequest>[];
 
   @override
-  AiProviderKind get kind => AiProviderKind.cloud;
+  final AiProviderKind kind;
   @override
   Future<bool> isAvailable() async => available;
   @override
@@ -113,6 +113,24 @@ void main() {
   });
 
   group('hybrid provider selection', () {
+    test('manual provider choice skips the other model and keeps Basic mode available', () async {
+      final nano = ScriptedCloud([(_) => const AiTextResponse('Local answer.')], kind: AiProviderKind.onDeviceLlm);
+      final cloud = ScriptedCloud([(_) => const AiTextResponse('Cloud answer.')]);
+      var selected = AiProviderKind.cloud;
+      final stack = TestStack(
+        extraProviders: [nano, cloud],
+        providerAllowed: (kind) => kind == selected || kind == AiProviderKind.localDeterministic,
+      );
+      expect((await ask(stack, 'Hello')).provider, AiProviderKind.cloud);
+      expect(nano.requests, isEmpty);
+
+      selected = AiProviderKind.onDeviceLlm;
+      expect((await ask(stack, 'Hello')).provider, AiProviderKind.onDeviceLlm);
+      nano.available = false;
+      expect((await ask(stack, 'Hello')).provider, AiProviderKind.localDeterministic);
+      expect(cloud.requests, hasLength(1));
+    });
+
     test('cloud is used when available and can call tools', () async {
       final cloud = ScriptedCloud([
         (_) => const AiToolCallResponse([ToolCallRequest(id: '1', name: 'get_account_balance', args: {})]),

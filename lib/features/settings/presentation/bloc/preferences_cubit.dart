@@ -15,6 +15,7 @@ final class PreferencesCubit extends Cubit<AppPreferences> {
 
   Future<void> setLanguage(AppLanguage l) => _set(state.copyWith(language: l, languageChosen: true));
   Future<void> completeOnboarding() => _set(state.copyWith(onboardingComplete: true));
+  Future<void> setAiInferenceMode(AiInferenceMode mode) => _set(state.copyWith(aiInferenceMode: mode));
   Future<void> setCloudAi(bool enabled) => _set(state.copyWith(cloudAiEnabled: enabled));
   Future<void> setNaturalVoice(bool enabled) => _set(state.copyWith(naturalVoiceEnabled: enabled));
 }

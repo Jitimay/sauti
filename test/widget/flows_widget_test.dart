@@ -59,6 +59,21 @@ void main() {
     sem.dispose();
   });
 
+  testWidgets('Assistant mode persists after choosing On-device Nano', (t) async {
+    await h.setUp();
+    await h.pumpApp(t);
+    await t.tap(find.text('Assistant'));
+    await settle(t);
+    await t.tap(find.byTooltip('Choose AI mode'));
+    await settle(t);
+    await t.tap(find.text('On-device Nano'));
+    await settle(t);
+    expect(find.text('On-device Nano'), findsOneWidget);
+    await t.tap(find.text('“How much money do I have?”'));
+    await settle(t);
+    expect(find.text('Basic mode'), findsWidgets);
+  });
+
   testWidgets('Assistant (typed): balance question answered with tool card', (t) async {
     await h.setUp();
     await h.pumpApp(t);

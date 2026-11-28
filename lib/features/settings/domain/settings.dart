@@ -52,12 +52,15 @@ final class AccessibilitySettings extends Equatable {
   List<Object?> get props => [textScale, highContrast, voiceFeedbackChoice, speechRate, interactionMode, reduceMotion];
 }
 
+enum AiInferenceMode { auto, cloud, onDevice }
+
 final class AppPreferences extends Equatable {
   const AppPreferences({
     this.language = AppLanguage.english,
     this.languageChosen = false,
     this.onboardingComplete = false,
     this.cloudAiEnabled = true,
+    this.aiInferenceMode = AiInferenceMode.auto,
     this.naturalVoiceEnabled = true,
   });
 
@@ -67,6 +70,9 @@ final class AppPreferences extends Equatable {
 
   /// User consent for sending minimised banking data to the cloud model.
   final bool cloudAiEnabled;
+  final AiInferenceMode aiInferenceMode;
+
+  bool get allowsCloudInference => cloudAiEnabled && aiInferenceMode != AiInferenceMode.onDevice;
 
   /// Replies read aloud by Gemini TTS (cloud) instead of the device voice.
   final bool naturalVoiceEnabled;
@@ -76,6 +82,7 @@ final class AppPreferences extends Equatable {
     bool? languageChosen,
     bool? onboardingComplete,
     bool? cloudAiEnabled,
+    AiInferenceMode? aiInferenceMode,
     bool? naturalVoiceEnabled,
   }) =>
       AppPreferences(
@@ -83,11 +90,12 @@ final class AppPreferences extends Equatable {
         languageChosen: languageChosen ?? this.languageChosen,
         onboardingComplete: onboardingComplete ?? this.onboardingComplete,
         cloudAiEnabled: cloudAiEnabled ?? this.cloudAiEnabled,
+        aiInferenceMode: aiInferenceMode ?? this.aiInferenceMode,
         naturalVoiceEnabled: naturalVoiceEnabled ?? this.naturalVoiceEnabled,
       );
 
   @override
-  List<Object?> get props => [language, languageChosen, onboardingComplete, cloudAiEnabled, naturalVoiceEnabled];
+  List<Object?> get props => [language, languageChosen, onboardingComplete, cloudAiEnabled, aiInferenceMode, naturalVoiceEnabled];
 }
 
 abstract interface class SettingsRepository {

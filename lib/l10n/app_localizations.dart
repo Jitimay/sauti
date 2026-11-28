@@ -1216,6 +1216,48 @@ abstract class AppLocalizations {
   /// **'Read aloud'**
   String get readAloud;
 
+  /// No description provided for @aiModeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose AI mode'**
+  String get aiModeTitle;
+
+  /// No description provided for @aiModeAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get aiModeAuto;
+
+  /// No description provided for @aiModeCloud.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud Gemini'**
+  String get aiModeCloud;
+
+  /// No description provided for @aiModeNano.
+  ///
+  /// In en, this message translates to:
+  /// **'On-device Nano'**
+  String get aiModeNano;
+
+  /// No description provided for @aiModeAutoDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefer the local model when ready.'**
+  String get aiModeAutoDescription;
+
+  /// No description provided for @aiModeCloudDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Gemini online when cloud AI is enabled.'**
+  String get aiModeCloudDescription;
+
+  /// No description provided for @aiModeNanoDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the local model. If unavailable, use Basic mode.'**
+  String get aiModeNanoDescription;
+
   /// No description provided for @assistantTitle.
   ///
   /// In en, this message translates to:

@@ -177,7 +177,7 @@ Future<void> configureDependencies({
     ..registerLazySingleton(() {
       Future<bool> cloudAllowed() async =>
           cloudReady &&
-          sl<SettingsRepository>().loadPreferences().cloudAiEnabled &&
+          sl<SettingsRepository>().loadPreferences().allowsCloudInference &&
           await sl<NetworkStatus>().isOnline();
       final providers = <AiProvider>[
         // On-device tier. iOS: Apple's session drives the tool loop, with
@@ -202,6 +202,14 @@ Future<void> configureDependencies({
       ];
       return AgentOrchestrator(
         providers: providers,
+        providerAllowed: (kind) {
+          final mode = sl<SettingsRepository>().loadPreferences().aiInferenceMode;
+          return switch (kind) {
+            AiProviderKind.cloud => mode != AiInferenceMode.onDevice,
+            AiProviderKind.onDeviceLlm => mode != AiInferenceMode.cloud,
+            AiProviderKind.localDeterministic => true,
+          };
+        },
         registry: sl(),
         clock: clock,
         newId: newId,
@@ -224,7 +232,7 @@ Future<void> configureDependencies({
         voice: config.ttsVoice,
         allowed: () async {
           final p = sl<SettingsRepository>().loadPreferences();
-          return p.cloudAiEnabled && p.naturalVoiceEnabled && await sl<NetworkStatus>().isOnline();
+          return p.allowsCloudInference && p.naturalVoiceEnabled && await sl<NetworkStatus>().isOnline();
         },
       );
     })

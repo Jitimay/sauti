@@ -43,7 +43,7 @@ String testId() => 'id-${_ids++}';
 
 /// Full in-memory demo stack used across unit, bloc and widget tests.
 final class TestStack {
-  TestStack({bool online = true, TransferPolicy policy = TransferPolicy.bifDefault, List<AiProvider>? extraProviders})
+  TestStack({bool online = true, TransferPolicy policy = TransferPolicy.bifDefault, List<AiProvider>? extraProviders, bool Function(AiProviderKind)? providerAllowed})
       : network = FakeNetwork(online: online),
         clock = FixedClock(testNow) {
     simulated = SimulatedBankRepository(clock: clock, network: network, policy: policy, latency: Duration.zero);
@@ -65,6 +65,7 @@ final class TestStack {
     ]);
     orchestrator = AgentOrchestrator(
       providers: [...?extraProviders, LocalIntentProvider(now: clock.now)],
+      providerAllowed: providerAllowed,
       registry: registry,
       clock: clock,
       newId: testId,
